@@ -1,1 +1,25 @@
-{"type":"sync","status":"Success","status_code":200,"error_code":0,"error":"","metadata":[{"name":"web1","status":"Running","status_code":103,"type":"container","architecture":"x86_64","config":{},"devices":{},"profiles":["default"],"project":"default","state":{"status":"Running","cpu":{"usage":123456789},"memory":{"usage":52428800,"total":0}}}]}
+{"type":"sync","status":"Success","status_code":200,"error_code":0,"error":"","metadata":[
+{"name":"web1","status":"Running","status_code":103,"type":"container","architecture":"x86_64","created_at":"2026-10-01T08:00:00.123456789Z","profiles":["default"],"project":"default",
+ "config":{"image.description":"Ubuntu noble amd64 (20261001_07:42)","image.os":"Ubuntu","image.release":"noble"},
+ "expanded_config":{"image.os":"Ubuntu","image.release":"noble","limits.memory":"2GiB"},
+ "devices":{},"expanded_devices":{"root":{"path":"/","pool":"default","type":"disk"}},
+ "state":{"status":"Running","status_code":103,"pid":4242,
+  "cpu":{"usage":123456789},
+  "memory":{"usage":52428800,"usage_peak":60000000,"total":0},
+  "disk":{"root":{"usage":104857600,"total":0}},
+  "network":{
+   "eth0":{"addresses":[
+     {"family":"inet","address":"10.178.204.23","netmask":"24","scope":"global"},
+     {"family":"inet6","address":"fd42:1:2:3::23","netmask":"64","scope":"global"},
+     {"family":"inet6","address":"fe80::216:3eff:fe00:1","netmask":"64","scope":"link"}],
+    "counters":{"bytes_received":1000,"bytes_sent":2000,"packets_received":10,"packets_sent":20},"state":"up","type":"broadcast"},
+   "lo":{"addresses":[
+     {"family":"inet","address":"127.0.0.1","netmask":"8","scope":"local"},
+     {"family":"inet6","address":"::1","netmask":"128","scope":"local"}],
+    "counters":{"bytes_received":500,"bytes_sent":500},"state":"up","type":"loopback"}}}},
+{"name":"db1","status":"Stopped","status_code":102,"type":"virtual-machine","architecture":"x86_64","created_at":"2026-10-02T09:30:00Z","profiles":["default","vm"],"project":"default",
+ "config":{"image.os":"Debian","image.release":"12"},
+ "expanded_config":{"limits.cpu":"2","limits.memory":"4096MiB"},
+ "devices":{},"expanded_devices":{"root":{"path":"/","pool":"default","type":"disk"}},
+ "state":null}
+]}
