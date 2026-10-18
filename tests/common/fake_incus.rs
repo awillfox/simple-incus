@@ -1,10 +1,10 @@
 //! Fake Incus servers on 127.0.0.1:0 (hyper; runs on Windows).
 use std::convert::Infallible;
 use std::net::SocketAddr;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use futures_util::{SinkExt, StreamExt};
-use http_body_util::Full;
+use http_body_util::{BodyExt, Full};
 use hyper::body::{Bytes, Incoming};
 use hyper::service::service_fn;
 use hyper::{Method, Request, Response as HyperResponse};
@@ -16,6 +16,18 @@ type Route = (Method, String, u16, Value);
 
 /// HTTP server. Each route is (method, path-without-query, status, JSON body); unmatched -> 404 error envelope.
 pub async fn spawn(routes: Vec<(Method, &str, u16, Value)>) -> SocketAddr {
+    spawn_recording(routes).await.0
+}
+
+/// A request seen by the fake: (method, path-without-query, body text).
+pub type Call = (Method, String, String);
+
+/// Like [`spawn`], also returning every request in arrival order.
+pub async fn spawn_recording(
+    routes: Vec<(Method, &str, u16, Value)>,
+) -> (SocketAddr, Arc<Mutex<Vec<Call>>>) {
+    let calls: Arc<Mutex<Vec<Call>>> = Arc::default();
+    let seen = calls.clone();
     let routes: Arc<Vec<Route>> =
         Arc::new(routes.into_iter().map(|(m, p, s, v)| (m, p.to_string(), s, v)).collect());
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -24,13 +36,22 @@ pub async fn spawn(routes: Vec<(Method, &str, u16, Value)>) -> SocketAddr {
         loop {
             let Ok((sock, _)) = listener.accept().await else { return };
             let routes = routes.clone();
+            let seen = seen.clone();
             tokio::spawn(async move {
                 let svc = service_fn(move |req: Request<Incoming>| {
                     let routes = routes.clone();
+                    let seen = seen.clone();
                     async move {
+                        let (parts, body) = req.into_parts();
+                        let body = body.collect().await.map(|b| b.to_bytes()).unwrap_or_default();
+                        seen.lock().unwrap().push((
+                            parts.method.clone(),
+                            parts.uri.path().to_string(),
+                            String::from_utf8_lossy(&body).into_owned(),
+                        ));
                         let hit = routes
                             .iter()
-                            .find(|(m, p, _, _)| m == req.method() && p == req.uri().path());
+                            .find(|(m, p, _, _)| *m == parts.method && p == parts.uri.path());
                         let (status, body) = match hit {
                             Some((_, _, s, v)) => (*s, v.to_string()),
                             None => (404, r#"{"type":"error","error":"not found","error_code":404}"#.into()),
@@ -50,7 +71,7 @@ pub async fn spawn(routes: Vec<(Method, &str, u16, Value)>) -> SocketAddr {
             });
         }
     });
-    addr
+    (addr, calls)
 }
 
 /// Accepts connections and never answers (a stalled incusd).

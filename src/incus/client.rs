@@ -7,9 +7,10 @@ use tokio_tungstenite::WebSocketStream;
 
 use std::time::Duration;
 
-use super::raw::{Envelope, Operation};
+use super::raw::{self, Envelope, Operation};
 use super::transport::{connect, BoxedIo};
 use crate::config::IncusEndpoint;
+use crate::model::Action;
 
 #[derive(Debug, thiserror::Error)]
 pub enum IncusError {
@@ -158,6 +159,49 @@ impl IncusClient {
         Ok(ws)
     }
 
+    /// All instances with live state (`recursion=2`).
+    pub async fn list_instances(&self) -> Result<Vec<raw::Instance>, IncusError> {
+        self.get("/1.0/instances?recursion=2").await
+    }
+
+    /// One instance without live state.
+    pub async fn get_instance(&self, name: &str) -> Result<raw::Instance, IncusError> {
+        self.get(&format!("/1.0/instances/{}", encode_segment(name))).await
+    }
+
+    /// Host CPU thread count from `/1.0/resources`.
+    pub async fn host_threads(&self) -> Result<u32, IncusError> {
+        #[derive(serde::Deserialize)]
+        struct Cpu {
+            total: u32,
+        }
+        #[derive(serde::Deserialize)]
+        struct Resources {
+            cpu: Cpu,
+        }
+        Ok(self.get::<Resources>("/1.0/resources").await?.cpu.total)
+    }
+
+    /// Requests a lifecycle change; returns the background operation.
+    pub async fn instance_state_put(&self, name: &str, action: &Action) -> Result<Operation, IncusError> {
+        let (verb, force) = match *action {
+            Action::Start => ("start", false),
+            Action::Stop { force } => ("stop", force),
+            Action::Restart { force } => ("restart", force),
+            Action::Freeze => ("freeze", false),
+            Action::Unfreeze => ("unfreeze", false),
+        };
+        let body = serde_json::json!({"action": verb, "force": force, "timeout": -1});
+        let path = format!("/1.0/instances/{}/state", encode_segment(name));
+        expect_async(self.send::<_, serde_json::Value>(Method::PUT, &path, Some(&body)).await?)
+    }
+
+    /// Deletes a (stopped) instance; returns the background operation.
+    pub async fn delete_instance(&self, name: &str) -> Result<Operation, IncusError> {
+        let path = format!("/1.0/instances/{}", encode_segment(name));
+        expect_async(self.send::<(), serde_json::Value>(Method::DELETE, &path, None).await?)
+    }
+
     pub async fn ping(&self) -> bool {
         self.get::<serde_json::Value>("/1.0").await.is_ok()
     }
@@ -180,4 +224,23 @@ fn ws_error(e: tokio_tungstenite::tungstenite::Error) -> IncusError {
         }
         other => IncusError::Unreachable(other.to_string()),
     }
+}
+
+fn expect_async<T>(r: Response<T>) -> Result<Operation, IncusError> {
+    match r {
+        Response::Async(op) => Ok(op),
+        Response::Sync(_) => Err(IncusError::Decode("expected an async operation".into())),
+    }
+}
+
+/// Percent-encodes a value for use as one URL path segment.
+fn encode_segment(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for b in s.bytes() {
+        match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => out.push(b as char),
+            _ => out.push_str(&format!("%{b:02X}")),
+        }
+    }
+    out
 }
