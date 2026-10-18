@@ -11,7 +11,8 @@ use crate::ui::theme::{self, Theme};
 pub fn breadcrumb(path: &str) -> (&'static str, &'static str, Option<String>) {
     let mut parts = path.trim_matches('/').split('/').filter(|s| !s.is_empty());
     let section = parts.next().unwrap_or("");
-    let detail = parts.next().map(str::to_string);
+    // Only instances have a detail level; /images/<tab> is a tab, not an item.
+    let detail = parts.next().map(str::to_string).filter(|_| section == "instances");
     for (href, label, _) in NAV_ITEMS {
         if href.trim_start_matches('/') == section {
             return (href, label, detail);
@@ -106,5 +107,6 @@ mod tests {
         assert_eq!(breadcrumb("/instances"), ("/instances", "Instances", None));
         assert_eq!(breadcrumb("/instances/web/console"), ("/instances", "Instances", Some("web".into())));
         assert_eq!(breadcrumb("/images"), ("/images", "Images", None));
+        assert_eq!(breadcrumb("/images/catalog"), ("/images", "Images", None));
     }
 }

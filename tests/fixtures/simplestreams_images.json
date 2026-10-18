@@ -1,0 +1,683 @@
+{
+ "content_id": "images",
+ "datatype": "image-downloads",
+ "format": "products:1.0",
+ "products": {
+  "ubuntu:noble:amd64:default": {
+   "aliases": "ubuntu/noble/default,ubuntu/24.04/default,ubuntu/noble,ubuntu/24.04",
+   "arch": "amd64",
+   "os": "Ubuntu",
+   "release": "noble",
+   "release_title": "noble",
+   "requirements": {
+    "cgroup": "v2"
+   },
+   "variant": "default",
+   "versions": {
+    "20261015_07:42": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "f8609724a1f77ef6e329c075224a22dacd289619da2be3d546b6c72f076b5acb",
+       "size": 668,
+       "path": "images/ubuntu/noble/amd64/default/20261015_07:42/incus.tar.xz",
+       "combined_sha256": "a9f39dc136293592af4f09c84d9feacd356f89864ca820e8ff5606f3f95dc556",
+       "combined_rootxz_sha256": "a9f39dc136293592af4f09c84d9feacd356f89864ca820e8ff5606f3f95dc556",
+       "combined_squashfs_sha256": "6e191edfe1b026e04fd69406c8ecb8e761932f65a304a0aa4167e39b5c8af847",
+       "combined_disk-kvm-img_sha256": "64c68a0106bd161eb40290950495abf4df4f74414bd8f9ef754bab9b833e8080"
+      },
+      "root.tar.xz": {
+       "ftype": "root.tar.xz",
+       "sha256": "ed146bca044cdaf6d1ac74ddd917fc263c519f96acc10c919574b04f01f59fe7",
+       "size": 129798196,
+       "path": "images/ubuntu/noble/amd64/default/20261015_07:42/rootfs.tar.xz"
+      },
+      "root.squashfs": {
+       "ftype": "squashfs",
+       "sha256": "f0fc99352478529b5899dfb2b70ae515fcfb004f3252291effc469abcc27aeee",
+       "size": 141246464,
+       "path": "images/ubuntu/noble/amd64/default/20261015_07:42/rootfs.squashfs"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "54376fbe205b12b545d653c8245a8811ffee7ce295004ed3e76aa926431e277b",
+       "size": 306374656,
+       "path": "images/ubuntu/noble/amd64/default/20261015_07:42/disk.qcow2"
+      }
+     }
+    },
+    "20261016_07:42": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "b9a6e2fd22e52509d0657cb26c087add4e21ca66967280746caa7e81cee5b511",
+       "size": 684,
+       "path": "images/ubuntu/noble/amd64/default/20261016_07:42/incus.tar.xz",
+       "combined_sha256": "0922d306697f6d806e00baede1956b1a0ee18abcf9f2b83c800143cf3b9f61ec",
+       "combined_rootxz_sha256": "0922d306697f6d806e00baede1956b1a0ee18abcf9f2b83c800143cf3b9f61ec",
+       "combined_squashfs_sha256": "8d7438a6bf45fef5d31d041419c4a5f073819180b5c774b3f7dda76853ab33ee",
+       "combined_disk-kvm-img_sha256": "b3dadddd64d72e24018a4b406379fd9a0567c3aa276641a73733ad29979e93df"
+      },
+      "root.tar.xz": {
+       "ftype": "root.tar.xz",
+       "sha256": "a47d7c3e6d492a3210406edcfa509cb7e5ee7b15f1690ac18dfaf7e82b55568e",
+       "size": 129663668,
+       "path": "images/ubuntu/noble/amd64/default/20261016_07:42/rootfs.tar.xz"
+      },
+      "root.squashfs": {
+       "ftype": "squashfs",
+       "sha256": "6f5b87dd2589ef36ecdef35f91c0d59dfa27cce1d77de36cbfc0553029b0fb03",
+       "size": 141250560,
+       "path": "images/ubuntu/noble/amd64/default/20261016_07:42/rootfs.squashfs"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "acc645f844fec6df255717d3224ef5cfba63d216cd49fc7dcabc4ec166614a0d",
+       "size": 306449408,
+       "path": "images/ubuntu/noble/amd64/default/20261016_07:42/disk.qcow2"
+      }
+     }
+    }
+   }
+  },
+  "ubuntu:noble:arm64:default": {
+   "aliases": "ubuntu/noble/default,ubuntu/24.04/default,ubuntu/noble,ubuntu/24.04",
+   "arch": "arm64",
+   "os": "Ubuntu",
+   "release": "noble",
+   "release_title": "noble",
+   "requirements": {
+    "cgroup": "v2"
+   },
+   "variant": "default",
+   "versions": {
+    "20261016_07:42": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "3a0cf76674d00ce13b8e109735a2015b609c39c33d510283ea0abf39510e1ee0",
+       "size": 720,
+       "path": "images/ubuntu/noble/arm64/default/20261016_07:42/incus.tar.xz",
+       "combined_sha256": "9944647bb16a6c0d95bce32582daf177bb2efe2fb86bc090f2ac146cf526b0e9",
+       "combined_rootxz_sha256": "9944647bb16a6c0d95bce32582daf177bb2efe2fb86bc090f2ac146cf526b0e9",
+       "combined_squashfs_sha256": "a5712d0d7bd586a22800f79022f935e74f58db4ca2473eef8eaeb32055aa9e27",
+       "combined_disk-kvm-img_sha256": "2a14904d731f9959e0534e35a623ca3dee91a1298a895978cef855ee5e9fccb2"
+      },
+      "root.tar.xz": {
+       "ftype": "root.tar.xz",
+       "sha256": "387aeac7eb38588b8e49ca3829c196e8efc5a0ff42024c2f885f65be868fcd43",
+       "size": 127638680,
+       "path": "images/ubuntu/noble/arm64/default/20261016_07:42/rootfs.tar.xz"
+      },
+      "root.squashfs": {
+       "ftype": "squashfs",
+       "sha256": "a70eb25fa7d74efb6649056d9a286bc5e766493d07a5cd8227d5299f154eca59",
+       "size": 138473472,
+       "path": "images/ubuntu/noble/arm64/default/20261016_07:42/rootfs.squashfs"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "25737de5f3346a120c256a394ba2a930c267eaa3ce18d5a42deb8dbc55941bbf",
+       "size": 318089216,
+       "path": "images/ubuntu/noble/arm64/default/20261016_07:42/disk.qcow2"
+      }
+     }
+    },
+    "20261018_05:25": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "a0e370302e059b2a5bd50bcf95a8057bfc01f78f14fded75b5e8a4906e8168f3",
+       "size": 716,
+       "path": "images/ubuntu/noble/arm64/default/20261018_05:25/incus.tar.xz",
+       "combined_sha256": "7419a8708e79167c643f0edaeda8c651b8b09ac782c9f0ba2ce463788d297f64",
+       "combined_rootxz_sha256": "7419a8708e79167c643f0edaeda8c651b8b09ac782c9f0ba2ce463788d297f64",
+       "combined_squashfs_sha256": "7426b27524c11fa8fa007a9dadeb8d4fe42efd4a794696b4b7f5984ca52c060e",
+       "combined_disk-kvm-img_sha256": "e34173bd294a7af5f2b014ab99a05af033b518b9066b996432845cc65eeab3ef"
+      },
+      "root.tar.xz": {
+       "ftype": "root.tar.xz",
+       "sha256": "faba29ab880be988ecc47741eb898d3f0703381353ffb4f0127c784a5f2c6647",
+       "size": 127696092,
+       "path": "images/ubuntu/noble/arm64/default/20261018_05:25/rootfs.tar.xz"
+      },
+      "root.squashfs": {
+       "ftype": "squashfs",
+       "sha256": "5a34178cdc1bf1a9f61a17bc8a71a17e316c0df9974461d2536fa545865e437f",
+       "size": 138473472,
+       "path": "images/ubuntu/noble/arm64/default/20261018_05:25/rootfs.squashfs"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "8ab82f75e6bc56da7986fb32803b04a1b053d1bb787d89a602fe2d3a5b371bac",
+       "size": 317886976,
+       "path": "images/ubuntu/noble/arm64/default/20261018_05:25/disk.qcow2"
+      }
+     }
+    }
+   }
+  },
+  "ubuntu:noble:amd64:cloud": {
+   "aliases": "ubuntu/noble/cloud,ubuntu/24.04/cloud",
+   "arch": "amd64",
+   "os": "Ubuntu",
+   "release": "noble",
+   "release_title": "noble",
+   "requirements": {
+    "cgroup": "v2"
+   },
+   "variant": "cloud",
+   "versions": {
+    "20261015_07:42": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "40674a4e235e908103aee699b716faa435a675c35bc16eb37bd3f989f4850dfa",
+       "size": 1200,
+       "path": "images/ubuntu/noble/amd64/cloud/20261015_07:42/incus.tar.xz",
+       "combined_sha256": "250daaa223a40ab4cc927cb8cb82386586737f625cc42c9c5c1393f7b531b3cb",
+       "combined_rootxz_sha256": "250daaa223a40ab4cc927cb8cb82386586737f625cc42c9c5c1393f7b531b3cb",
+       "combined_squashfs_sha256": "8e79e00bbdc6813df413801d0f887ed54bbe0c8f863c931ea7b7053e809d82d5",
+       "combined_disk-kvm-img_sha256": "f3e8a2d5548b8c6758d97537dc19b8ebe5d158471b8979b87be4fd057d516bed"
+      },
+      "root.tar.xz": {
+       "ftype": "root.tar.xz",
+       "sha256": "b2cc4883b76ff9fa2bd5db622e7ef3de21241598fe5dee32e4e6321605ceb7ff",
+       "size": 157046944,
+       "path": "images/ubuntu/noble/amd64/cloud/20261015_07:42/rootfs.tar.xz"
+      },
+      "root.squashfs": {
+       "ftype": "squashfs",
+       "sha256": "2ead6044be7975a67d08041309c245514095a25a9e630d49cc800b26c86229ad",
+       "size": 170053632,
+       "path": "images/ubuntu/noble/amd64/cloud/20261015_07:42/rootfs.squashfs"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "7a7564e48b05447d472901387ce5e92025bd627adaea9724b62e7b6a3ce8cbb0",
+       "size": 343126528,
+       "path": "images/ubuntu/noble/amd64/cloud/20261015_07:42/disk.qcow2"
+      }
+     }
+    },
+    "20261016_07:42": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "efbd5d3002723bc0196340e5feede45de84c658664a043b17b7df3d066c3e7df",
+       "size": 1192,
+       "path": "images/ubuntu/noble/amd64/cloud/20261016_07:42/incus.tar.xz",
+       "combined_sha256": "acb7b129a88440d6ae4a169521482e786369d02bb54ee8fc6a28bff047f0abcd",
+       "combined_rootxz_sha256": "acb7b129a88440d6ae4a169521482e786369d02bb54ee8fc6a28bff047f0abcd",
+       "combined_squashfs_sha256": "ddbc871ce856d7fc978e1c3aba7f8a7e058d128b42585cbb7caf6ebdcb1a791f",
+       "combined_disk-kvm-img_sha256": "1950711f78839b17f3c52dd493b8853a86a1b242aba0e0a1feaf5e0a75edb8cd"
+      },
+      "root.tar.xz": {
+       "ftype": "root.tar.xz",
+       "sha256": "16e14ed4926a99668b8a4a9dc7613ff140c0a4ddffe983ec0ff3f670a245d615",
+       "size": 157090608,
+       "path": "images/ubuntu/noble/amd64/cloud/20261016_07:42/rootfs.tar.xz"
+      },
+      "root.squashfs": {
+       "ftype": "squashfs",
+       "sha256": "406da2e6b60d1a7561aa3fd37e084d734d137dea6ee13a875460d04280dfbc8c",
+       "size": 170057728,
+       "path": "images/ubuntu/noble/amd64/cloud/20261016_07:42/rootfs.squashfs"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "a409790314774c34740cecfe5e2be380ad1c2220319623236d69b6fddc13d21d",
+       "size": 342817792,
+       "path": "images/ubuntu/noble/amd64/cloud/20261016_07:42/disk.qcow2"
+      }
+     }
+    }
+   }
+  },
+  "ubuntu:noble:amd64:desktop": {
+   "aliases": "ubuntu/noble/desktop,ubuntu/24.04/desktop",
+   "arch": "amd64",
+   "os": "Ubuntu",
+   "release": "noble",
+   "release_title": "noble",
+   "requirements": {
+    "cgroup": "v2"
+   },
+   "variant": "desktop",
+   "versions": {
+    "20261015_07:42": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "00f9c6bfaad55da7ab1678f42792493aa2632728f122dab7acd8a73e238d3b28",
+       "size": 708,
+       "path": "images/ubuntu/noble/amd64/desktop/20261015_07:42/incus.tar.xz",
+       "combined_disk-kvm-img_sha256": "b78ea1e0c874ae08cc8cc20b59236643e12aad5694ec4a22b4b62154c51cdcb3"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "7ecf15888814c745799f405c3a68ba43ab58c701db5c9c138790d6393fe290ad",
+       "size": 1206542336,
+       "path": "images/ubuntu/noble/amd64/desktop/20261015_07:42/disk.qcow2"
+      }
+     }
+    },
+    "20261016_07:42": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "e1aaafe65bdf65d3157ee6375e73c1e6baaef74aef0a30d5554545814e4d492c",
+       "size": 700,
+       "path": "images/ubuntu/noble/amd64/desktop/20261016_07:42/incus.tar.xz",
+       "combined_disk-kvm-img_sha256": "042ebc5ee5d9918ceed8dcaa32b79d7496f0872c69faf8460f3bbc1f7827941d"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "735070fa95e3d8ebb2e91fefab5fb495d62e12f2df7918b99d678f47bc644e8e",
+       "size": 1201155072,
+       "path": "images/ubuntu/noble/amd64/desktop/20261016_07:42/disk.qcow2"
+      }
+     }
+    }
+   }
+  },
+  "alpine:3.21:amd64:default": {
+   "aliases": "alpine/3.21/default,alpine/3.21",
+   "arch": "amd64",
+   "os": "Alpine",
+   "release": "3.21",
+   "release_title": "3.21",
+   "requirements": {
+    "secureboot": "false"
+   },
+   "variant": "default",
+   "versions": {
+    "20261015_13:00": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "895d817d9d74fbfa9284bf467db98a18d3548683969b153665ff4d74daebb14f",
+       "size": 868,
+       "path": "images/alpine/3.21/amd64/default/20261015_13:00/incus.tar.xz",
+       "combined_sha256": "9c5d0aeaa5999a2b8bd034ab7cea28489aba6f4adf88f1d2e6772a70fc8df7a0",
+       "combined_rootxz_sha256": "9c5d0aeaa5999a2b8bd034ab7cea28489aba6f4adf88f1d2e6772a70fc8df7a0",
+       "combined_squashfs_sha256": "0a6ced524b90c155ad00136510b0a4762f18b9c11815cd6cebd09226cd82b329",
+       "combined_disk-kvm-img_sha256": "4ef6f39bc1de3fb23a60353541ffb30171660997cb27622c6c5db3d9758513c3"
+      },
+      "root.tar.xz": {
+       "ftype": "root.tar.xz",
+       "sha256": "1382cd065ab1248997accd50b88974373bd66dfca2a0800c3c51195ad28f142d",
+       "size": 3271764,
+       "path": "images/alpine/3.21/amd64/default/20261015_13:00/rootfs.tar.xz"
+      },
+      "root.squashfs": {
+       "ftype": "squashfs",
+       "sha256": "65d415baa2c153202758b13faff10788cc57b2202775bcc360b2d39022ccfb2b",
+       "size": 3366912,
+       "path": "images/alpine/3.21/amd64/default/20261015_13:00/rootfs.squashfs"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "6b9f0aa4a94762dba472cbd946afa63ef6f112e394327996faa6bdc79a14d3b2",
+       "size": 70844416,
+       "path": "images/alpine/3.21/amd64/default/20261015_13:00/disk.qcow2"
+      }
+     }
+    },
+    "20261016_13:00": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "5ec013fd41e14d3c1386e4ea03441543ebf8204d5d9b6fe1febb7748dbaed8a5",
+       "size": 884,
+       "path": "images/alpine/3.21/amd64/default/20261016_13:00/incus.tar.xz",
+       "combined_sha256": "e5d7125a7cea3bff6a73469c7042c560378f0387c4aea9df9579da1f2d46b96e",
+       "combined_rootxz_sha256": "e5d7125a7cea3bff6a73469c7042c560378f0387c4aea9df9579da1f2d46b96e",
+       "combined_squashfs_sha256": "f17d529e9e668c848daf4216142a60739a4ec2e842469577272e867f043fb7cc",
+       "combined_disk-kvm-img_sha256": "4ffaecc2f71145d5a8cf97ebc28406bf3b23b9af764ec9413066bd934b417f73"
+      },
+      "root.tar.xz": {
+       "ftype": "root.tar.xz",
+       "sha256": "9c0da991cfa481df1ac0843b610ffb0793d71c685f636fd445df5668fc068a4c",
+       "size": 3270516,
+       "path": "images/alpine/3.21/amd64/default/20261016_13:00/rootfs.tar.xz"
+      },
+      "root.squashfs": {
+       "ftype": "squashfs",
+       "sha256": "499844c168cbd090d5f346ec3298fc521ee3251917a691cd95eb5db9ff1a4df9",
+       "size": 3366912,
+       "path": "images/alpine/3.21/amd64/default/20261016_13:00/rootfs.squashfs"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "7db74a24f2fd3c941b917ab56d5928a36cf9a5585660f8bcc932c6e956c74f61",
+       "size": 70778880,
+       "path": "images/alpine/3.21/amd64/default/20261016_13:00/disk.qcow2"
+      }
+     }
+    }
+   }
+  },
+  "debian:bookworm:amd64:default": {
+   "aliases": "debian/bookworm/default,debian/12/default,debian/bookworm,debian/12",
+   "arch": "amd64",
+   "os": "Debian",
+   "release": "bookworm",
+   "release_title": "bookworm",
+   "requirements": {},
+   "variant": "default",
+   "versions": {
+    "20261015_05:24": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "7fd5b776a613875ef4eea699aeeee935623f9b668d16f82d5f346b6a6d9ee758",
+       "size": 672,
+       "path": "images/debian/bookworm/amd64/default/20261015_05:24/incus.tar.xz",
+       "combined_sha256": "47b94498d9a1eab3cf301859be6973d3feffbbfd5131a462fb386c0244296c01",
+       "combined_rootxz_sha256": "47b94498d9a1eab3cf301859be6973d3feffbbfd5131a462fb386c0244296c01",
+       "combined_squashfs_sha256": "fab5e6f2fb1fa91777e4c93382e3fa2d16006ac3be298b4929ffc65bbd4cdb09",
+       "combined_disk-kvm-img_sha256": "e3cd8bfcd54f4268dde950c79289be110dbee7e3ad7ae3db4b8a04571e7f992d"
+      },
+      "root.tar.xz": {
+       "ftype": "root.tar.xz",
+       "sha256": "ba73633a63b463383abb537e92b5c74b4248aa490a4e49b213aed6eb72846ef1",
+       "size": 98677408,
+       "path": "images/debian/bookworm/amd64/default/20261015_05:24/rootfs.tar.xz"
+      },
+      "root.squashfs": {
+       "ftype": "squashfs",
+       "sha256": "c288bb770329fe5d0f60f72278204620a90344848b698b787a702339b1803547",
+       "size": 111493120,
+       "path": "images/debian/bookworm/amd64/default/20261015_05:24/rootfs.squashfs"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "ca3920277dc4cecd0c000ece4f003d072cbb4d1c89852cc19c556798c4fc466f",
+       "size": 376315904,
+       "path": "images/debian/bookworm/amd64/default/20261015_05:24/disk.qcow2"
+      }
+     }
+    },
+    "20261016_05:24": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "c78a6ed3cadc84ef32408aaf1b2ab92f6920be31fddf9c4ca47db092993b0dc3",
+       "size": 680,
+       "path": "images/debian/bookworm/amd64/default/20261016_05:24/incus.tar.xz",
+       "combined_sha256": "9a6af2644abf1117de7eaf2000da878bd85ba67e8c8b746cfdcf617705986ecb",
+       "combined_rootxz_sha256": "9a6af2644abf1117de7eaf2000da878bd85ba67e8c8b746cfdcf617705986ecb",
+       "combined_squashfs_sha256": "4ffb8a2aec9b213ff6d847bc51dbf6cc8642a47d1edd4efe051e3203a18b89d2",
+       "combined_disk-kvm-img_sha256": "66a9b547340f4eec165a846482b9231bde7350c4efa3579acab04e709568f6d1"
+      },
+      "root.tar.xz": {
+       "ftype": "root.tar.xz",
+       "sha256": "930a7d52d6e2dd583c908848295f7e8f5b6403bc63dba262c3ed052d2aac1a44",
+       "size": 98688168,
+       "path": "images/debian/bookworm/amd64/default/20261016_05:24/rootfs.tar.xz"
+      },
+      "root.squashfs": {
+       "ftype": "squashfs",
+       "sha256": "ffb6afa0739e0c657c30e240d0b6e77fa17bf3b1370b932407dcb045f837e405",
+       "size": 111493120,
+       "path": "images/debian/bookworm/amd64/default/20261016_05:24/rootfs.squashfs"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "64948305f7d84b09dc6075e0928227605d7bd3fefc504ba3efb76967f51f3a52",
+       "size": 376250880,
+       "path": "images/debian/bookworm/amd64/default/20261016_05:24/disk.qcow2"
+      }
+     }
+    }
+   }
+  },
+  "busybox:1.38.0:amd64:default": {
+   "aliases": "busybox/1.38.0/default,busybox/1.38.0",
+   "arch": "amd64",
+   "os": "Busybox",
+   "release": "1.38.0",
+   "release_title": "1.38.0",
+   "requirements": {},
+   "variant": "default",
+   "versions": {
+    "20261015_06:00": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "7350f9b98cebf9f0af16c90706e06d2351e88d3bed83791a2d7f34cd9b4381bf",
+       "size": 428,
+       "path": "images/busybox/1.38.0/amd64/default/20261015_06:00/incus.tar.xz",
+       "combined_sha256": "2fb3c8ee05bf3d63e5f28152677886d06e74738d54c87cc9d2210057bec14705",
+       "combined_rootxz_sha256": "2fb3c8ee05bf3d63e5f28152677886d06e74738d54c87cc9d2210057bec14705",
+       "combined_squashfs_sha256": "c0d39a207f69584c9261b5aecdcf39c39c912740849267aa7740ef5e0d7e80cd"
+      },
+      "root.tar.xz": {
+       "ftype": "root.tar.xz",
+       "sha256": "5d7c89927a0642f24b795f5ccf5a70ff915a31d88d79d1feef730f7b40c3b495",
+       "size": 1083980,
+       "path": "images/busybox/1.38.0/amd64/default/20261015_06:00/rootfs.tar.xz"
+      },
+      "root.squashfs": {
+       "ftype": "squashfs",
+       "sha256": "cbe5b1604b12224667b228df7c3a1092e00f85b7f7802420fe45088b374f6e8e",
+       "size": 1089536,
+       "path": "images/busybox/1.38.0/amd64/default/20261015_06:00/rootfs.squashfs"
+      }
+     }
+    },
+    "20261016_06:00": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "a19f6eb5eedd94fa29a23843acce4c6bd29ecf4265d4ce1136d9ecc139c1de24",
+       "size": 428,
+       "path": "images/busybox/1.38.0/amd64/default/20261016_06:00/incus.tar.xz",
+       "combined_sha256": "2e25433c27fe52c97449b5fa02b2022a7766d00cd888892695ff024dd8f6b190",
+       "combined_rootxz_sha256": "2e25433c27fe52c97449b5fa02b2022a7766d00cd888892695ff024dd8f6b190",
+       "combined_squashfs_sha256": "83b3cd9b952040323b1b1a7a4756db9c7e8fef2924cb12c50e9dceafd65d4777"
+      },
+      "root.tar.xz": {
+       "ftype": "root.tar.xz",
+       "sha256": "51bee021bcb0f9ae61b09a8c91285ee8161d7fb78d8467649929677afabbb313",
+       "size": 1084092,
+       "path": "images/busybox/1.38.0/amd64/default/20261016_06:00/rootfs.tar.xz"
+      },
+      "root.squashfs": {
+       "ftype": "squashfs",
+       "sha256": "72d4583cd8ad3bf18364dc775662f64052c0a749a7233419aacabf194b779f90",
+       "size": 1089536,
+       "path": "images/busybox/1.38.0/amd64/default/20261016_06:00/rootfs.squashfs"
+      }
+     }
+    }
+   }
+  },
+  "freebsd:15.0:amd64:default+zfs": {
+   "aliases": "freebsd/15.0/default+zfs,freebsd/15.0/default,freebsd/15.0/zfs,freebsd/15.0",
+   "arch": "amd64",
+   "os": "Freebsd",
+   "release": "15.0",
+   "release_title": "15.0",
+   "requirements": {
+    "secureboot": "false"
+   },
+   "variant": "default+zfs",
+   "versions": {
+    "20261016_11:37": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "0674b6fdff68e0cd914e42b9ee0fc20251c2bd44bbbc683a849235e6e4ff112b",
+       "size": 616,
+       "path": "images/freebsd/15.0/amd64/default+zfs/20261016_11:37/incus.tar.xz",
+       "combined_disk-kvm-img_sha256": "c74030b21442a86bf12775da31f48ac70d4f3ed467258663cf9b484f7b09dcbb"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "3d70c6979fabaa2981c0b5293978de1b6d20f8d6eba80f15ebd026253bc3dfe1",
+       "size": 2866806784,
+       "path": "images/freebsd/15.0/amd64/default+zfs/20261016_11:37/disk.qcow2"
+      }
+     }
+    },
+    "20261018_02:24": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "ed8d9725f2033b41bc699de30bf13d8e1c6b75dfa45bf9d2f5c5ac6af88c5e7d",
+       "size": 616,
+       "path": "images/freebsd/15.0/amd64/default+zfs/20261018_02:24/incus.tar.xz",
+       "combined_disk-kvm-img_sha256": "1bfc33e03f092063cbca36e1ff4ae2d16795d30b7ed12f362b7ebf828d30fddc"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "fba8ca2a568e3eaf45deaf228cba9dbdd3ed19fedfccc38fecf32231dab3751e",
+       "size": 2865496064,
+       "path": "images/freebsd/15.0/amd64/default+zfs/20261018_02:24/disk.qcow2"
+      }
+     }
+    }
+   }
+  },
+  "nixos:26.05:amd64:default": {
+   "aliases": "nixos/26.05/default,nixos/26.05",
+   "arch": "amd64",
+   "os": "Nixos",
+   "release": "26.05",
+   "release_title": "26.05",
+   "requirements": {
+    "secureboot": "false"
+   },
+   "variant": "default",
+   "versions": {
+    "20261015_01:04": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "acbfbe869469b7b662de32c21b7d080c3a9d11c319518f86f3d3d431d634b622",
+       "size": 580,
+       "path": "images/nixos/26.05/amd64/default/20261015_01:04/incus.tar.xz",
+       "combined_squashfs_sha256": "fefa3b23a719f417b9c8e2b12a213a1a3278052007e61221b9e3c661a0ac3298",
+       "combined_disk-kvm-img_sha256": "268f492a4a26f25fda83dda1a5f808bd5040dfe16103ec74ecb717985a8304a8"
+      },
+      "root.squashfs": {
+       "ftype": "squashfs",
+       "sha256": "ae4e3c0d22334592d141f236ce441d739f5e68ae93a9ad1b60ea4cae354ce6c1",
+       "size": 280031232,
+       "path": "images/nixos/26.05/amd64/default/20261015_01:04/rootfs.squashfs"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "38df208ea069b24c39174f61e7c913762ccd6443d32f96a1a0cf51ab1f46198c",
+       "size": 670336512,
+       "path": "images/nixos/26.05/amd64/default/20261015_01:04/disk.qcow2"
+      }
+     }
+    },
+    "20261016_01:46": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "382f5242b8e89fbf1c4c4fc966d73b8e480430e6ca07df6c9b26ae626e6dcf25",
+       "size": 580,
+       "path": "images/nixos/26.05/amd64/default/20261016_01:46/incus.tar.xz",
+       "combined_squashfs_sha256": "bae742b7bb6858c33d5c1f541ec67759e88d28e2c36a1ead160d5c69841af6fb",
+       "combined_disk-kvm-img_sha256": "cae8f8f702ba0782db8f947080765aa802a05140672b7cdc1e7a550a721eaf6c"
+      },
+      "root.squashfs": {
+       "ftype": "squashfs",
+       "sha256": "243701e59f7a4ee5bd08a29294acf23eecfee1a383d55a0265a29e56c0da037c",
+       "size": 280096768,
+       "path": "images/nixos/26.05/amd64/default/20261016_01:46/rootfs.squashfs"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "fc9ea368cecb93d452dc16cbcb84a946966b882715f3b3cbeb43d0d030b6216b",
+       "size": 670936576,
+       "path": "images/nixos/26.05/amd64/default/20261016_01:46/disk.qcow2"
+      }
+     }
+    }
+   }
+  },
+  "archlinux:current:amd64:default": {
+   "aliases": "archlinux/current/default,archlinux/current,archlinux",
+   "arch": "amd64",
+   "os": "Archlinux",
+   "release": "current",
+   "release_title": "current",
+   "requirements": {
+    "secureboot": "false"
+   },
+   "variant": "default",
+   "versions": {
+    "20261015_04:18": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "84262bce3f0b95d7923c7411e3965a8a903ed5d7d29e1948992d274d76610930",
+       "size": 688,
+       "path": "images/archlinux/current/amd64/default/20261015_04:18/incus.tar.xz",
+       "combined_sha256": "eb489d02e77ae0ae3a89872a8b6fea1d5987a5859e621f75793dcb814f20df1a",
+       "combined_rootxz_sha256": "eb489d02e77ae0ae3a89872a8b6fea1d5987a5859e621f75793dcb814f20df1a",
+       "combined_squashfs_sha256": "631305895f88f1d3ca26fb4b04523a6f229e77bcfb5d035406d3ef64adc1338c",
+       "combined_disk-kvm-img_sha256": "85ac250fc19f82e557a04bbcc0a21f449f3302dc1e38fd083c1d6fd0f7fd81b4"
+      },
+      "root.tar.xz": {
+       "ftype": "root.tar.xz",
+       "sha256": "da05f02ad5541f4f6257322b1373915b2ff89092cf386613454c75cc87c14abb",
+       "size": 186397568,
+       "path": "images/archlinux/current/amd64/default/20261015_04:18/rootfs.tar.xz"
+      },
+      "root.squashfs": {
+       "ftype": "squashfs",
+       "sha256": "319172a8f8e11253f97c2e034ad4909732cb3141c0a9a81fbdabf57e996f4541",
+       "size": 211673088,
+       "path": "images/archlinux/current/amd64/default/20261015_04:18/rootfs.squashfs"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "dcd6f73bbdfb07d05bdc91026c773dc63d67fc848bfde595b69a75137b5ecc3c",
+       "size": 570604544,
+       "path": "images/archlinux/current/amd64/default/20261015_04:18/disk.qcow2"
+      }
+     }
+    },
+    "20261016_04:18": {
+     "items": {
+      "incus.tar.xz": {
+       "ftype": "incus.tar.xz",
+       "sha256": "aa650a536683d94283bd0654e0a968eb6f0173c883384166df4f338c6e78c82d",
+       "size": 708,
+       "path": "images/archlinux/current/amd64/default/20261016_04:18/incus.tar.xz",
+       "combined_sha256": "0f496b6e450ded1c2dffa7156e457a601edb99a96fa6465639d89c063f001f73",
+       "combined_rootxz_sha256": "0f496b6e450ded1c2dffa7156e457a601edb99a96fa6465639d89c063f001f73",
+       "combined_squashfs_sha256": "e92979907dba16e3f77c8b268823d2251aa0f69f158ee4ec763aa2de520cdfa3",
+       "combined_disk-kvm-img_sha256": "45a8b5e104dcc9bf111d3e2e24ce893101b46eb317329d334533acc1a5ce4042"
+      },
+      "root.tar.xz": {
+       "ftype": "root.tar.xz",
+       "sha256": "a34ffa41c6ea77916898cd1a44588df1cb16a33760535e91307acd40c4f1b5e3",
+       "size": 186431236,
+       "path": "images/archlinux/current/amd64/default/20261016_04:18/rootfs.tar.xz"
+      },
+      "root.squashfs": {
+       "ftype": "squashfs",
+       "sha256": "6e04c89a66b37e5e3626a274b6350207998227a75329420314e4b8e461a3340a",
+       "size": 211701760,
+       "path": "images/archlinux/current/amd64/default/20261016_04:18/rootfs.squashfs"
+      },
+      "disk.qcow2": {
+       "ftype": "disk-kvm.img",
+       "sha256": "067c1720b015587db4de904afa75484a9c76f25ebb2ad7c9c29abcf07086e3e2",
+       "size": 570564608,
+       "path": "images/archlinux/current/amd64/default/20261016_04:18/disk.qcow2"
+      }
+     }
+    }
+   }
+  }
+ }
+}

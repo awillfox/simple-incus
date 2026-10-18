@@ -210,6 +210,35 @@ impl IncusClient {
         Ok(self.get::<Resources>("/1.0/resources").await?.cpu.total)
     }
 
+    /// Local images with full details.
+    pub async fn list_images(&self) -> Result<Vec<raw::Image>, IncusError> {
+        self.get("/1.0/images?recursion=1").await
+    }
+
+    /// Deletes a local image; returns the background operation.
+    pub async fn delete_image(&self, fingerprint: &str) -> Result<Operation, IncusError> {
+        let path = format!("/1.0/images/{}", encode_segment(fingerprint));
+        expect_async(self.send::<(), serde_json::Value>(Method::DELETE, &path, None).await?)
+    }
+
+    pub async fn resources(&self) -> Result<raw::Resources, IncusError> {
+        self.get("/1.0/resources").await
+    }
+
+    pub async fn storage_pools(&self) -> Result<Vec<raw::StoragePool>, IncusError> {
+        self.get("/1.0/storage-pools?recursion=1").await
+    }
+
+    pub async fn pool_resources(&self, pool: &str) -> Result<raw::PoolResources, IncusError> {
+        self.get(&format!("/1.0/storage-pools/{}/resources", encode_segment(pool))).await
+    }
+
+    /// Incus server version from `GET /1.0` (`environment.server_version`).
+    pub async fn server_version(&self) -> Result<String, IncusError> {
+        let v: serde_json::Value = self.get("/1.0").await?;
+        Ok(v["environment"]["server_version"].as_str().unwrap_or_default().to_string())
+    }
+
     /// Requests a lifecycle change; returns the background operation.
     pub async fn instance_state_put(&self, name: &str, action: &Action) -> Result<Operation, IncusError> {
         let (verb, force) = match *action {

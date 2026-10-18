@@ -61,7 +61,7 @@ pub fn App() -> impl IntoView {
                                 <Route path=path!("/") view=OverviewPage/>
                                 <Route path=path!("/instances") view=InstancesPage/>
                                 <Route path=path!("/instances/:name/:tab?") view=InstancePage/>
-                                <Route path=path!("/images") view=ImagesPage/>
+                                <Route path=path!("/images/:tab?") view=ImagesPage/>
                             </Routes>
                         </main>
                     </div>

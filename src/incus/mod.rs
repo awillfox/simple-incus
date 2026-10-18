@@ -1,5 +1,6 @@
 //! Typed client for the Incus REST API (default project only).
 mod client;
+pub mod catalog;
 pub mod events;
 pub mod map;
 pub mod raw;

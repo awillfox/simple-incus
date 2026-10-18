@@ -136,6 +136,85 @@ pub struct NetCounters {
     pub bytes_sent: u64,
 }
 
+/// Image as returned by `/1.0/images?recursion=1`.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct Image {
+    #[serde(default)]
+    pub fingerprint: String,
+    #[serde(default)]
+    pub aliases: Vec<ImageAlias>,
+    #[serde(default)]
+    pub properties: HashMap<String, String>,
+    /// `container` or `virtual-machine`.
+    #[serde(default, rename = "type")]
+    pub kind: String,
+    #[serde(default, deserialize_with = "counter")]
+    pub size: u64,
+    #[serde(default)]
+    pub uploaded_at: String,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct ImageAlias {
+    #[serde(default)]
+    pub name: String,
+}
+
+/// The parts of `/1.0/resources` the overview shows.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct Resources {
+    #[serde(default)]
+    pub cpu: ResourcesCpu,
+    #[serde(default)]
+    pub memory: ResourcesMemory,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct ResourcesCpu {
+    #[serde(default)]
+    pub total: u32,
+    #[serde(default)]
+    pub sockets: Vec<CpuSocket>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct CpuSocket {
+    #[serde(default)]
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct ResourcesMemory {
+    #[serde(default, deserialize_with = "counter")]
+    pub total: u64,
+    #[serde(default, deserialize_with = "counter")]
+    pub used: u64,
+}
+
+/// Entry of `/1.0/storage-pools?recursion=1`.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct StoragePool {
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub driver: String,
+}
+
+/// `/1.0/storage-pools/{name}/resources`.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct PoolResources {
+    #[serde(default)]
+    pub space: PoolSpace,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct PoolSpace {
+    #[serde(default, deserialize_with = "counter")]
+    pub used: u64,
+    #[serde(default, deserialize_with = "counter")]
+    pub total: u64,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
