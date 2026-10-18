@@ -43,16 +43,18 @@ pub fn count_by_status(rows: &[InstanceSummary]) -> Counts {
     c
 }
 
-/// Total CPU use of the running instances, in percent of the host. Each
-/// instance reports its use against its own CPU allowance, so a pinned
-/// instance counts for more than it really takes: an upper bound.
-pub fn instance_cpu_pct(rows: &[InstanceSummary]) -> f64 {
-    rows.iter()
+/// Sum of the CPU use of the running instances, in percent of the host, or
+/// `None` when no running instance reports CPU data. Each instance reports
+/// its use against its own CPU allowance, so this is an upper bound.
+pub fn instance_cpu_pct(rows: &[InstanceSummary]) -> Option<f64> {
+    let mut reported = rows
+        .iter()
         .filter(|r| r.status == InstanceStatus::Running)
         .filter_map(|r| r.cpu_pct)
         .map(f64::from)
-        .fold(0.0, |a, b| a + b)
-        .clamp(0.0, 100.0)
+        .peekable();
+    reported.peek()?;
+    Some(reported.fold(0.0, |a, b| a + b).clamp(0.0, 100.0))
 }
 
 /// One-line description of an event for the activity feed.
@@ -156,11 +158,21 @@ pub fn HostPanel(
             .into_any(),
         },
         Some(h) => {
-            let cpu_label = format!("CPU \u{b7} {} threads", h.cpu_threads);
+            let cpu_sub = format!("sum of running instances \u{b7} {} host threads", h.cpu_threads);
             let mem_label = format!("Memory \u{b7} {} / {}", format_bytes(h.mem_used), format_bytes(h.mem_total));
             view! {
                 <div class="space-y-4 p-4">
-                    {cpu_pct.get().map(|p| view! { <Meter value=p max=100.0 label=cpu_label.clone()/> })}
+                    {match cpu_pct.get() {
+                        Some(p) => view! { <Meter value=p max=100.0 label="Instance CPU"/> }.into_any(),
+                        None => view! {
+                            <div class="flex items-baseline justify-between text-[12px]">
+                                <span class="text-muted">"Instance CPU"</span>
+                                <span class="text-muted" title="No running instance reports CPU data">"\u{2014}"</span>
+                            </div>
+                        }
+                        .into_any(),
+                    }}
+                    <p class="-mt-2 text-[11px] text-muted">{cpu_sub}</p>
                     <Meter value=h.mem_used as f64 max=h.mem_total as f64 label=mem_label/>
                     <dl class="space-y-1.5 border-t border-border pt-3">
                         {fact("Processor", if h.cpu_model.is_empty() { "\u{2014}".into() } else { h.cpu_model.clone() })}
@@ -318,7 +330,7 @@ pub fn OverviewPage() -> impl IntoView {
     }
 
     let counts = Signal::derive(move || rows.with(|r| r.as_deref().map(count_by_status)));
-    let cpu = Signal::derive(move || rows.with(|r| r.as_deref().map(instance_cpu_pct)));
+    let cpu = Signal::derive(move || rows.with(|r| r.as_deref().and_then(instance_cpu_pct)));
     let failed = Memo::new(move |_| {
         rows.with(Option::is_none) && host_data.with(Option::is_none) && inst_error.with(Option::is_some) && host_error.with(Option::is_some)
     });
@@ -411,8 +423,12 @@ mod tests {
             count_by_status(&rows),
             Counts { total: 5, running: 2, stopped: 1, frozen: 1, other: 1 }
         );
-        assert_eq!(instance_cpu_pct(&rows), 100.0);
-        assert_eq!(instance_cpu_pct(&rows[..1]), 30.0);
+        assert_eq!(instance_cpu_pct(&rows), Some(100.0));
+        assert_eq!(instance_cpu_pct(&rows[..1]), Some(30.0));
+        // Nothing running, or nothing reporting: no figure rather than 0%.
+        assert_eq!(instance_cpu_pct(&rows[2..]), None);
+        assert_eq!(instance_cpu_pct(&[inst(InstanceStatus::Running, None)]), None);
+        assert_eq!(instance_cpu_pct(&[]), None);
     }
 
     #[test]
@@ -469,6 +485,7 @@ mod tests {
         });
         assert!(html.contains("7.5.1") && html.contains("Intel(R) Core(TM) i5-9500T"), "{html}");
         assert!(html.contains("8.0 GiB / 32.0 GiB"), "{html}");
+        assert!(html.contains("Instance CPU") && html.contains("sum of running instances \u{b7} 6 host threads"), "{html}");
         assert!(html.contains("default \u{b7} dir \u{b7} 30.0 GiB / 500.0 GiB"), "{html}");
         // A pool whose usage is unknown is listed, without a bar.
         assert!(html.contains("broken \u{b7} zfs") && html.contains("Usage unavailable"), "{html}");
@@ -476,6 +493,18 @@ mod tests {
         assert!(html.contains("href=\"/instances/web1\""), "{html}");
         assert!(html.contains("Starting instance \u{b7} 60%"), "{html}");
         assert!(html.contains("just now") && html.contains("2m ago"), "{html}");
+    }
+
+    #[test]
+    fn host_cpu_without_data_shows_a_dash_not_zero() {
+        let owner = Owner::new();
+        let html = owner.with(|| {
+            let host = RwSignal::new(Some(host()));
+            view! { <HostPanel host=host cpu_pct=Signal::stored(None::<f64>)/> }.to_html()
+        });
+        assert!(html.contains("Instance CPU"), "{html}");
+        // Only the memory meter is drawn.
+        assert_eq!(html.matches("role=\"meter\"").count(), 1, "{html}");
     }
 
     #[test]

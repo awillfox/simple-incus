@@ -1,7 +1,7 @@
 //! Simplestreams catalog: parsing the real (trimmed) index and cache behaviour.
 use std::convert::Infallible;
 use std::net::SocketAddr;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -95,17 +95,18 @@ fn catalog_uses_latest_version() {
     assert!(all[0].container && !all[0].vm, "{:?}", all[0]);
 }
 
-/// Serves `body` with 200 until `fail` is set, then 500.
-async fn spawn_index(body: String, fail: Arc<AtomicBool>) -> SocketAddr {
+/// Serves `body` with 200 until `fail` is set, then 500; counts every request.
+async fn spawn_index(body: String, fail: Arc<AtomicBool>, hits: Arc<AtomicUsize>) -> SocketAddr {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     tokio::spawn(async move {
         while let Ok((sock, _)) = listener.accept().await {
-            let (body, fail) = (body.clone(), fail.clone());
+            let (body, fail, hits) = (body.clone(), fail.clone(), hits.clone());
             tokio::spawn(async move {
                 let svc = service_fn(move |_: Request<Incoming>| {
-                    let (body, fail) = (body.clone(), fail.clone());
+                    let (body, fail, hits) = (body.clone(), fail.clone(), hits.clone());
                     async move {
+                        hits.fetch_add(1, Ordering::SeqCst);
                         let (status, body) =
                             if fail.load(Ordering::SeqCst) { (500, String::new()) } else { (200, body) };
                         Ok::<_, Infallible>(Response::builder().status(status).body(Full::new(Bytes::from(body))).unwrap())
@@ -121,21 +122,25 @@ async fn spawn_index(body: String, fail: Arc<AtomicBool>) -> SocketAddr {
 #[tokio::test]
 async fn catalog_serves_stale_on_failure() {
     let fail = Arc::new(AtomicBool::new(false));
-    let addr = spawn_index(index().to_string(), fail.clone()).await;
+    let hits = Arc::new(AtomicUsize::new(0));
+    let addr = spawn_index(index().to_string(), fail.clone(), hits.clone()).await;
     let catalog = Catalog::with_url(format!("http://{addr}/streams/v1/images.json"), Duration::from_millis(50));
     let first = catalog.get().await.unwrap();
     assert!(first.iter().any(|i| i.alias == "ubuntu/24.04"));
+    assert_eq!(hits.load(Ordering::SeqCst), 1);
 
     fail.store(true, Ordering::SeqCst);
     tokio::time::sleep(Duration::from_millis(120)).await; // TTL expired: a refresh is attempted and fails
     let stale = catalog.get().await.unwrap();
     assert_eq!(*stale, *first);
+    // The refresh really was attempted (and failed), not skipped.
+    assert_eq!(hits.load(Ordering::SeqCst), 2);
 }
 
 #[tokio::test]
 async fn catalog_fails_without_a_good_copy() {
     let fail = Arc::new(AtomicBool::new(true));
-    let addr = spawn_index(String::new(), fail).await;
+    let addr = spawn_index(String::new(), fail, Arc::default()).await;
     let catalog = Catalog::with_url(format!("http://{addr}/images.json"), Duration::from_secs(3600));
     let err = catalog.get().await.unwrap_err();
     assert!(err.starts_with("Catalog unavailable: "), "{err}");
