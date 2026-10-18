@@ -107,12 +107,21 @@ impl RowAction {
     }
 }
 
+/// An action in flight on one instance.
+#[derive(Debug, Clone, PartialEq)]
+struct Busy {
+    /// Status when the action started; the row is done once it changes.
+    status: InstanceStatus,
+    /// Identifies this action so a stale timer cannot clear a newer one.
+    generation: u64,
+}
+
 /// Shared with the row action cells (column renderers are plain `fn`s, so
 /// they reach page state through context).
 #[derive(Clone, Copy)]
 struct RowCtx {
-    /// Instances with an action in flight, with the status they had when it started.
-    busy: RwSignal<HashMap<String, InstanceStatus>>,
+    /// Instances with an action in flight.
+    busy: RwSignal<HashMap<String, Busy>>,
     request: Callback<(String, RowAction)>,
 }
 
@@ -290,7 +299,7 @@ fn columns() -> Vec<Column<InstanceSummary>> {
         Column::new("Disk", disk_cell).sortable(|a, b| a.disk_used.cmp(&b.disk_used)).numeric(),
         Column::new("Created", created_cell)
             .sortable(|a, b| parse_rfc3339(&a.created_at).cmp(&parse_rfc3339(&b.created_at))),
-        Column::new("", actions_cell).numeric(),
+        Column::new("", actions_cell).numeric().deps(|r| format!("{:?}", r.status)),
     ]
 }
 
@@ -376,16 +385,26 @@ pub fn InstancesPage() -> impl IntoView {
     let rows = RwSignal::new(Vec::<InstanceSummary>::new());
     let error = RwSignal::new(None::<String>);
     let loaded = RwSignal::new(false);
-    let busy = RwSignal::new(HashMap::<String, InstanceStatus>::new());
+    let busy = RwSignal::new(HashMap::<String, Busy>::new());
+    let next_generation = StoredValue::new(0u64);
     let pending = RwSignal::new(None::<(String, RowAction)>);
-    let refetch = move || tick.update(|t| *t = t.wrapping_add(1));
+    // Timers and async continuations can outlive the page; every touch of page
+    // state from them goes through the `try_*` accessors (None once disposed).
+    let refetch = move || {
+        tick.try_update(|t| *t = t.wrapping_add(1));
+    };
 
     // Keep the last good rows on screen when a refetch fails.
     Effect::new(move |_| match resource.get() {
         Some(Ok(v)) => {
             // A row is done once its status moved (or it is gone).
-            busy.update(|b| b.retain(|n, st| v.iter().find(|r| &r.name == n).is_some_and(|r| &r.status == st)));
-            rows.set(v);
+            busy.update(|b| {
+                b.retain(|n, st| v.iter().find(|r| &r.name == n).is_some_and(|r| r.status == st.status))
+            });
+            // Unchanged data must not touch the rows (keeps focus/hover stable).
+            if rows.with_untracked(|r| *r != v) {
+                rows.set(v);
+            }
             error.set(None);
             loaded.set(true);
         }
@@ -401,10 +420,10 @@ pub fn InstancesPage() -> impl IntoView {
     let generation = StoredValue::new(0u32);
     Effect::new(move |_| {
         if events.get().is_some_and(|e| e.kind == UiEventKind::Lifecycle) {
-            let g = generation.get_value().wrapping_add(1);
-            generation.set_value(g);
+            let Some(g) = generation.try_get_value().map(|g| g.wrapping_add(1)) else { return };
+            generation.try_set_value(g);
             after_ms(DEBOUNCE_MS, move || {
-                if generation.get_value() == g {
+                if generation.try_get_value() == Some(g) {
                     refetch();
                 }
             });
@@ -434,18 +453,26 @@ pub fn InstancesPage() -> impl IntoView {
 
     let run = move |name: String, action: RowAction, force: bool| {
         let status = rows.with_untracked(|r| r.iter().find(|i| i.name == name).map(|i| i.status.clone()));
+        let generation = next_generation.try_get_value().unwrap_or(0).wrapping_add(1);
+        next_generation.try_set_value(generation);
         busy.update(|b| {
-            b.insert(name.clone(), status.unwrap_or(InstanceStatus::Stopped));
+            b.insert(
+                name.clone(),
+                Busy { status: status.unwrap_or(InstanceStatus::Stopped), generation },
+            );
         });
         spawn_local(async move {
             let result = match action.model(force) {
                 Some(a) => instance_action(name.clone(), a).await.map(|_| ()),
                 None => delete_instance(name.clone(), force).await,
             };
+            // Clears the flag only if it is still the one this action set.
             let unbusy = move |name: &str| {
-                busy.update(|b| {
-                    b.remove(name);
-                })
+                busy.try_update(|b| {
+                    if b.get(name).is_some_and(|x| x.generation == generation) {
+                        b.remove(name);
+                    }
+                });
             };
             match result {
                 Ok(()) => {
@@ -628,8 +655,18 @@ mod tests {
         });
         assert!(html.contains("web-1"), "{html}");
         assert!(html.contains("db-1"), "{html}");
-        assert!(html.contains("Running"), "{html}");
-        assert!(html.contains("Stopped"), "{html}");
+        // The stats strip also says "Running"/"Stopped", so check the pills' own markup,
+        // each inside its fixture row.
+        let row = |name: &str| {
+            let start = html.find(&format!("data-key=\"{name}\"")).expect("row");
+            let end = html[start..].find("</tr>").expect("row end") + start;
+            html[start..end].to_string()
+        };
+        let (web, db) = (row("web-1"), row("db-1"));
+        assert!(web.contains("data-status=\"running\""), "{web}");
+        assert!(db.contains("data-status=\"stopped\""), "{db}");
+        assert!(!web.contains("data-status=\"stopped\"") && !db.contains("data-status=\"running\""));
+        assert_eq!(html.matches("data-status=").count(), 2, "{html}");
         assert!(html.contains("10.0.0.5"), "{html}");
         assert!(html.contains("aria-label=\"Stop web-1\""), "{html}");
         assert!(html.contains("aria-label=\"Start db-1\""), "{html}");

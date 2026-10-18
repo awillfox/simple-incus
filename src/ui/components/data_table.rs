@@ -6,8 +6,11 @@
 //! search text contains the query (case-insensitive). The search text is
 //! `search(&row)` when given, otherwise `row_key(&row)`.
 //!
-//! Rows are re-rendered whenever `rows` changes (no keyed diffing), so live
-//! updates to a row with the same key always show; tables here are small.
+//! Rows are keyed by `row_key`: when `rows` changes only the rows whose value
+//! changed (`T: PartialEq`) update, so focus, hover and clicks on the other
+//! rows survive live refreshes. A column may narrow this further with
+//! [`Column::deps`]: its cell then re-renders only when that fingerprint
+//! changes (keeps e.g. a focused action button alive while other cells tick).
 use std::cmp::Ordering;
 
 use leptos::prelude::*;
@@ -23,6 +26,8 @@ pub struct Column<T> {
     pub render: fn(&T) -> AnyView,
     /// Right-align and use tabular numerals.
     pub numeric: bool,
+    /// Optional fingerprint of the row values this cell depends on.
+    pub deps: Option<fn(&T) -> String>,
 }
 
 impl<T> Clone for Column<T> {
@@ -34,10 +39,15 @@ impl<T> Copy for Column<T> {}
 
 impl<T> Column<T> {
     pub fn new(title: &'static str, render: fn(&T) -> AnyView) -> Self {
-        Column { title, sort: None, render, numeric: false }
+        Column { title, sort: None, render, numeric: false, deps: None }
     }
     pub fn sortable(mut self, cmp: fn(&T, &T) -> Ordering) -> Self {
         self.sort = Some(cmp);
+        self
+    }
+    /// Re-render this cell only when `deps(row)` changes.
+    pub fn deps(mut self, deps: fn(&T) -> String) -> Self {
+        self.deps = Some(deps);
         self
     }
     pub fn numeric(mut self) -> Self {
@@ -102,7 +112,7 @@ pub fn DataTable<T>(
     toolbar: Option<ChildrenFn>,
 ) -> impl IntoView
 where
-    T: Clone + Send + Sync + 'static,
+    T: Clone + PartialEq + Send + Sync + 'static,
 {
     let sort = RwSignal::new(None::<(usize, bool)>);
     let query = RwSignal::new(String::new());
@@ -164,9 +174,9 @@ where
             .collect_view()
     });
 
+    let is_empty = Memo::new(move |_| visible().is_empty());
     let body = move || {
-        let v = visible();
-        if v.is_empty() && loading.get() {
+        if is_empty.get() && loading.get() {
             return (0..5)
                 .map(|n| {
                     let w = ["w-32", "w-20", "w-24", "w-16", "w-28"];
@@ -185,7 +195,7 @@ where
                 .collect_view()
                 .into_any();
         }
-        if v.is_empty() {
+        if is_empty.get() {
             let msg = if total() == 0 { empty.clone() } else { "No rows match the filter.".to_string() };
             return view! {
                 <tr>
@@ -195,49 +205,65 @@ where
             .into_any();
         }
         let clickable = on_row_click.is_some();
-        v.into_iter()
-            .map(|row| {
-                let key = row_key(&row);
-                let cells = columns.with_value(|cols| {
-                    cols.iter()
-                        .map(|c| {
-                            let cls = if c.numeric { "num text-right" } else { "text-left" };
-                            view! {
-                                <td class=format!("whitespace-nowrap px-3 first:pl-4 last:pr-4 {cls}")>{(c.render)(&row)}</td>
+        view! {
+            <For
+                each=visible
+                key=move |row: &T| row_key(row)
+                children=move |first: T| {
+                    let key = row_key(&first);
+                    // Latest value of this row; only notifies when it actually changed.
+                    let row = Memo::new(move |prev: Option<&T>| {
+                        rows.with(|r| r.iter().find(|x| row_key(x) == key).cloned())
+                            .or_else(|| prev.cloned())
+                            .unwrap_or_else(|| first.clone())
+                    });
+                    let cells = columns.with_value(|cols| {
+                        cols.iter()
+                            .map(|c| {
+                                let cls = if c.numeric { "num text-right" } else { "text-left" };
+                                let render = c.render;
+                                let inner = match c.deps {
+                                    Some(deps) => {
+                                        let fp = Memo::new(move |_| row.with(|r| deps(r)));
+                                        view! { {move || { fp.track(); row.with_untracked(|r| render(r)) }} }.into_any()
+                                    }
+                                    None => view! { {move || row.with(|r| render(r))} }.into_any(),
+                                };
+                                view! {
+                                    <td class=format!("whitespace-nowrap px-3 first:pl-4 last:pr-4 {cls}")>{inner}</td>
+                                }
+                            })
+                            .collect_view()
+                    });
+                    view! {
+                        <tr
+                            data-key=row_key(&row.get_untracked())
+                            tabindex=clickable.then_some("0")
+                            class=if clickable {
+                                "h-9 cursor-pointer border-b border-border text-[13px] text-text transition-colors last:border-0 hover:bg-hover focus-visible:bg-hover focus-visible:outline-none"
+                            } else {
+                                "h-9 border-b border-border text-[13px] text-text transition-colors last:border-0 hover:bg-hover/60"
                             }
-                        })
-                        .collect_view()
-                });
-                let click_row = row.clone();
-                let key_row = row;
-                view! {
-                    <tr
-                        data-key=key
-                        tabindex=clickable.then_some("0")
-                        class=if clickable {
-                            "h-9 cursor-pointer border-b border-border text-[13px] text-text transition-colors last:border-0 hover:bg-hover focus-visible:bg-hover focus-visible:outline-none"
-                        } else {
-                            "h-9 border-b border-border text-[13px] text-text transition-colors last:border-0 hover:bg-hover/60"
-                        }
-                        on:click=move |_| {
-                            if let Some(cb) = on_row_click {
-                                cb.run(click_row.clone());
-                            }
-                        }
-                        on:keydown=move |e| {
-                            if let Some(cb) = on_row_click {
-                                if e.key() == "Enter" {
-                                    cb.run(key_row.clone());
+                            on:click=move |_| {
+                                if let Some(cb) = on_row_click {
+                                    cb.run(row.get_untracked());
                                 }
                             }
-                        }
-                    >
-                        {cells}
-                    </tr>
+                            on:keydown=move |e| {
+                                if let Some(cb) = on_row_click {
+                                    if e.key() == "Enter" {
+                                        cb.run(row.get_untracked());
+                                    }
+                                }
+                            }
+                        >
+                            {cells}
+                        </tr>
+                    }
                 }
-            })
-            .collect_view()
-            .into_any()
+            />
+        }
+        .into_any()
     };
 
     let count = move || {

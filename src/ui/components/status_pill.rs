@@ -17,8 +17,9 @@ pub fn status_style(status: &InstanceStatus) -> (&'static str, &'static str, Str
 #[component]
 pub fn StatusPill(status: InstanceStatus) -> impl IntoView {
     let (pill, dot, label) = status_style(&status);
+    let marker = label.to_lowercase();
     view! {
-        <span class=format!(
+        <span data-status=marker class=format!(
             "inline-flex h-[22px] items-center gap-1.5 whitespace-nowrap rounded-full border px-2 text-[12px] font-medium leading-none {pill}"
         )>
             <span class=format!("size-1.5 rounded-full {dot}") aria-hidden="true"></span>
