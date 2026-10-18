@@ -7,7 +7,7 @@ use serde_json::{json, Value};
 use simple_incus::config::IncusEndpoint;
 use simple_incus::incus::{IncusClient, IncusError};
 use simple_incus::model::Action;
-use simple_incus::server::instances::{delete_instance_impl, instance_action_impl, list_instances_impl};
+use simple_incus::server::instances::{human, delete_instance_impl, instance_action_impl, list_instances_impl};
 use simple_incus::state::AppState;
 
 fn fixture(name: &str) -> Value {
@@ -118,4 +118,63 @@ async fn delete_stopped_just_deletes() {
     .await;
     delete_instance_impl(&state(addr), "web1", false).await.unwrap();
     assert_eq!(calls.lock().unwrap().len(), 3);
+}
+
+fn wait_op(status: &str, code: i32, err: &str) -> Value {
+    json!({"type":"sync","status":"Success","status_code":200,"error_code":0,"error":"",
+           "metadata":{"id":"6c1b2f3e-0000-4a5b-8c9d-1234567890ab","status":status,"status_code":code,"err":err}})
+}
+
+async fn force_delete_with_wait(wait: Value) -> (Result<(), IncusError>, Vec<(Method, String, String)>) {
+    let (addr, calls) = spawn_recording(vec![
+        (Method::GET, "/1.0/instances/web1", 200, instance("Running")),
+        (Method::PUT, "/1.0/instances/web1/state", 200, fixture("operation_running.json")),
+        (Method::DELETE, "/1.0/instances/web1", 200, fixture("operation_running.json")),
+        (Method::GET, OP, 200, wait),
+    ])
+    .await;
+    let r = delete_instance_impl(&state(addr), "web1", true).await;
+    let c = calls.lock().unwrap().clone();
+    (r, c)
+}
+
+fn msg(e: IncusError) -> String {
+    match e {
+        IncusError::Api { message, .. } => message,
+        other => panic!("unexpected {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn failed_stop_propagates_err_and_does_not_delete() {
+    let (r, calls) = force_delete_with_wait(wait_op("Failure", 400, "Failed to stop: busy")).await;
+    assert_eq!(msg(r.unwrap_err()), "Failed to stop: busy");
+    assert!(calls.iter().all(|c| c.0 != Method::DELETE));
+}
+
+#[tokio::test]
+async fn stop_wait_timeout_errors_and_does_not_delete() {
+    let (r, calls) = force_delete_with_wait(wait_op("Running", 103, "")).await;
+    assert_eq!(msg(r.unwrap_err()), "Timed out waiting for stop");
+    assert!(calls.iter().all(|c| c.0 != Method::DELETE));
+}
+
+#[tokio::test]
+async fn delete_wait_timeout_errors() {
+    let (addr, _) = spawn_recording(vec![
+        (Method::GET, "/1.0/instances/web1", 200, instance("Stopped")),
+        (Method::DELETE, "/1.0/instances/web1", 200, fixture("operation_running.json")),
+        (Method::GET, OP, 200, wait_op("Running", 103, "")),
+    ])
+    .await;
+    let e = delete_instance_impl(&state(addr), "web1", false).await.unwrap_err();
+    assert_eq!(msg(e), "Timed out waiting for delete");
+}
+
+#[tokio::test]
+async fn unreachable_maps_to_human_message() {
+    let st = state("127.0.0.1:1".parse().unwrap());
+    let e = list_instances_impl(&st).await.unwrap_err();
+    assert!(matches!(e, IncusError::Unreachable(_)));
+    assert_eq!(human(e).to_string().trim_start_matches("error running server function: "), "Incus is unreachable");
 }

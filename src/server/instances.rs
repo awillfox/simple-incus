@@ -42,12 +42,20 @@ mod imp {
         Ok(state.incus.instance_state_put(name, &action).await?.id)
     }
 
-    fn check(op: Operation) -> Result<(), IncusError> {
-        if !op.err.is_empty() || op.status_code >= 400 {
-            let message = if op.err.is_empty() { op.status } else { op.err };
-            return Err(IncusError::Api { status: 500, message });
+    /// Ok only for a finished, successful operation. A wait that timed out
+    /// leaves the operation still running, which is reported as a timeout.
+    fn check(op: Operation, step: &str) -> Result<(), IncusError> {
+        if op.status_code == 200 && op.err.is_empty() {
+            return Ok(());
         }
-        Ok(())
+        let message = if !op.err.is_empty() {
+            op.err
+        } else if op.status_code >= 400 {
+            format!("Failed to {step}: {}", op.status)
+        } else {
+            format!("Timed out waiting for {step}")
+        };
+        Err(IncusError::Api { status: 500, message })
     }
 
     pub async fn delete_instance_impl(state: &AppState, name: &str, force: bool) -> Result<(), IncusError> {
@@ -60,10 +68,10 @@ mod imp {
                 });
             }
             let op = state.incus.instance_state_put(name, &Action::Stop { force: true }).await?;
-            check(state.incus.wait(&op.id, STOP_WAIT_S).await?)?;
+            check(state.incus.wait(&op.id, STOP_WAIT_S).await?, "stop")?;
         }
         let op = state.incus.delete_instance(name).await?;
-        check(state.incus.wait(&op.id, DELETE_WAIT_S).await?)
+        check(state.incus.wait(&op.id, DELETE_WAIT_S).await?, "delete")
     }
 
     pub fn human(e: IncusError) -> leptos::server_fn::ServerFnError {
@@ -76,22 +84,22 @@ mod imp {
 }
 
 #[cfg(feature = "ssr")]
-pub use imp::{delete_instance_impl, instance_action_impl, list_instances_impl};
+pub use imp::{delete_instance_impl, human, instance_action_impl, list_instances_impl};
 
 #[server]
 pub async fn list_instances() -> Result<Vec<InstanceSummary>, ServerFnError> {
     let state = expect_context::<crate::state::AppState>();
-    list_instances_impl(&state).await.map_err(imp::human)
+    list_instances_impl(&state).await.map_err(human)
 }
 
 #[server]
 pub async fn instance_action(name: String, action: Action) -> Result<String, ServerFnError> {
     let state = expect_context::<crate::state::AppState>();
-    instance_action_impl(&state, &name, action).await.map_err(imp::human)
+    instance_action_impl(&state, &name, action).await.map_err(human)
 }
 
 #[server]
 pub async fn delete_instance(name: String, force: bool) -> Result<(), ServerFnError> {
     let state = expect_context::<crate::state::AppState>();
-    delete_instance_impl(&state, &name, force).await.map_err(imp::human)
+    delete_instance_impl(&state, &name, force).await.map_err(human)
 }
