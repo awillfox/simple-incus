@@ -99,4 +99,4 @@ the `incus-admin` group, and turn off Incus's HTTPS listener.
 
 ## License
 
-Not yet specified.
+[MIT](LICENSE)
