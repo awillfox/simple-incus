@@ -125,3 +125,24 @@ pub enum Action {
     Freeze,
     Unfreeze,
 }
+
+/// Marker so the status frame serialises as `{"kind":"Status","connected":..}`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum StatusKind {
+    Status,
+}
+
+/// Frames on the browser socket `/ws/events`: a UI event or an Incus
+/// connectivity change.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum WsMsg {
+    Event(UiEvent),
+    Status { kind: StatusKind, connected: bool },
+}
+
+impl WsMsg {
+    pub fn status(connected: bool) -> WsMsg {
+        WsMsg::Status { kind: StatusKind::Status, connected }
+    }
+}

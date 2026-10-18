@@ -16,7 +16,7 @@ fn bind(addr: std::net::SocketAddr) -> anyhow::Result<tokio::net::TcpListener> {
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    use axum::{routing::post, Router};
+    use axum::{routing::{get, post}, Router};
     use leptos::logging::log;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
@@ -54,6 +54,16 @@ async fn main() -> anyhow::Result<()> {
                         )
                         .await
                     }
+                }
+            }),
+        )
+        .route(
+            "/ws/events",
+            get({
+                let hub = state.hub.clone();
+                move |ws: axum::extract::ws::WebSocketUpgrade| {
+                    let hub = hub.clone();
+                    async move { simple_incus::ws::events::events_ws(ws, hub) }
                 }
             }),
         )

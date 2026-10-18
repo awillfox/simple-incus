@@ -5,7 +5,7 @@ use common::fake_incus::spawn_recording;
 use hyper::Method;
 use serde_json::{json, Value};
 use simple_incus::config::IncusEndpoint;
-use simple_incus::incus::{IncusClient, IncusError};
+use simple_incus::incus::{EventHub, IncusClient, IncusError};
 use simple_incus::model::Action;
 use simple_incus::server::instances::{human, delete_instance_impl, instance_action_impl, list_instances_impl};
 use simple_incus::state::AppState;
@@ -15,8 +15,11 @@ fn fixture(name: &str) -> Value {
     serde_json::from_str(&std::fs::read_to_string(p).unwrap()).unwrap()
 }
 
+/// The hub gets its own dead endpoint so its event polling does not show up in the recorded calls.
 fn state(addr: std::net::SocketAddr) -> AppState {
-    AppState::new(IncusClient::new(IncusEndpoint::Tcp(addr)), 4)
+    let dead = std::net::TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap();
+    let hub = EventHub::start(IncusClient::new(IncusEndpoint::Tcp(dead)));
+    AppState::with_hub(IncusClient::new(IncusEndpoint::Tcp(addr)), 4, hub)
 }
 
 fn instance(status: &str) -> Value {

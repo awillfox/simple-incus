@@ -105,3 +105,36 @@ pub async fn spawn_ws_echo() -> SocketAddr {
     });
     addr
 }
+
+/// Event websocket server. Connection N (0-based) waits `delay`, sends
+/// `scripts[N]` as text frames, then closes (except the last script, which stays open).
+/// Connections past the script stay open and silent.
+pub async fn spawn_ws_script(scripts: Vec<Vec<Value>>, delay: std::time::Duration) -> SocketAddr {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move {
+        let mut n = 0usize;
+        while let Ok((sock, _)) = listener.accept().await {
+            let frames = scripts.get(n).cloned();
+            let last = n + 1 >= scripts.len();
+            n += 1;
+            tokio::spawn(async move {
+                let Ok(mut ws) = tokio_tungstenite::accept_async(sock).await else { return };
+                tokio::time::sleep(delay).await;
+                for f in frames.iter().flatten() {
+                    let _ = ws.send(tokio_tungstenite::tungstenite::Message::text(f.to_string())).await;
+                }
+                if frames.is_some() && !last {
+                    let _ = ws.close(None).await;
+                } else {
+                    while let Some(Ok(m)) = ws.next().await {
+                        if m.is_close() {
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+    });
+    addr
+}
