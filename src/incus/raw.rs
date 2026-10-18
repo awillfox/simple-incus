@@ -60,6 +60,20 @@ pub struct Instance {
     pub created_at: String,
     #[serde(default)]
     pub state: Option<InstanceState>,
+    #[serde(default)]
+    pub expanded_devices: HashMap<String, HashMap<String, String>>,
+}
+
+/// Snapshot as returned by `/1.0/instances/{name}/snapshots?recursion=1`.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct InstanceSnapshot {
+    /// Bare snapshot name (some versions prefix it with `<instance>/`).
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub created_at: String,
+    #[serde(default)]
+    pub stateful: bool,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]

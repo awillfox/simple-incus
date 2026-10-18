@@ -169,6 +169,34 @@ impl IncusClient {
         self.get(&format!("/1.0/instances/{}", encode_segment(name))).await
     }
 
+    /// Live state of one instance (`/state`).
+    pub async fn instance_state(&self, name: &str) -> Result<raw::InstanceState, IncusError> {
+        self.get(&format!("/1.0/instances/{}/state", encode_segment(name))).await
+    }
+
+    pub async fn list_snapshots(&self, name: &str) -> Result<Vec<raw::InstanceSnapshot>, IncusError> {
+        self.get(&format!("/1.0/instances/{}/snapshots?recursion=1", encode_segment(name))).await
+    }
+
+    /// Creates a (stateless) snapshot; returns the background operation.
+    pub async fn create_snapshot(&self, name: &str, snap: &str) -> Result<Operation, IncusError> {
+        let body = serde_json::json!({"name": snap, "stateful": false});
+        let path = format!("/1.0/instances/{}/snapshots", encode_segment(name));
+        expect_async(self.send::<_, serde_json::Value>(Method::POST, &path, Some(&body)).await?)
+    }
+
+    pub async fn delete_snapshot(&self, name: &str, snap: &str) -> Result<Operation, IncusError> {
+        let path = format!("/1.0/instances/{}/snapshots/{}", encode_segment(name), encode_segment(snap));
+        expect_async(self.send::<(), serde_json::Value>(Method::DELETE, &path, None).await?)
+    }
+
+    /// Restores the instance from a snapshot; returns the background operation.
+    pub async fn restore_snapshot(&self, name: &str, snap: &str) -> Result<Operation, IncusError> {
+        let body = serde_json::json!({"restore": snap});
+        let path = format!("/1.0/instances/{}", encode_segment(name));
+        expect_async(self.send::<_, serde_json::Value>(Method::PUT, &path, Some(&body)).await?)
+    }
+
     /// Host CPU thread count from `/1.0/resources`.
     pub async fn host_threads(&self) -> Result<u32, IncusError> {
         #[derive(serde::Deserialize)]

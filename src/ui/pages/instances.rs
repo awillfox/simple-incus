@@ -14,11 +14,14 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_navigate;
 
+use super::actions::{after_ms, err_msg, perform, ActionConfirm, RowAction};
+#[cfg(feature = "hydrate")]
+use super::actions::page_visible;
 use super::PageFrame;
-use crate::model::{Action, InstanceKind, InstanceStatus, InstanceSummary, UiEventKind};
-use crate::server::instances::{delete_instance, instance_action, list_instances};
+use crate::model::{InstanceKind, InstanceStatus, InstanceSummary, UiEventKind};
+use crate::server::instances::list_instances;
 use crate::ui::components::{
-    toast, use_create_drawer, Column, ConfirmModal, DataTable, EmptyState, Icon, IconName, Meter, PageHeader,
+    toast, use_create_drawer, Column, DataTable, EmptyState, Icon, IconName, Meter, PageHeader,
     StatusPill, ToastKind,
 };
 use crate::ui::events::{use_events, use_incus_connected};
@@ -31,81 +34,6 @@ const POLL_MS: u64 = 5000;
 const DEBOUNCE_MS: u64 = 300;
 /// A row stays "busy" at most this long after a successful action.
 const BUSY_MAX_MS: u64 = 10_000;
-
-// ---------------------------------------------------------------- actions
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RowAction {
-    Start,
-    Stop,
-    Restart,
-    Freeze,
-    Unfreeze,
-    Delete,
-}
-
-impl RowAction {
-    /// Actions offered for an instance in `status`, in display order.
-    pub fn available(status: &InstanceStatus) -> &'static [RowAction] {
-        use RowAction::*;
-        match status {
-            InstanceStatus::Running => &[Stop, Restart, Freeze, Delete],
-            InstanceStatus::Stopped => &[Start, Delete],
-            InstanceStatus::Frozen => &[Unfreeze, Stop, Delete],
-            _ => &[Delete],
-        }
-    }
-
-    fn label(self) -> &'static str {
-        match self {
-            RowAction::Start => "Start",
-            RowAction::Stop => "Stop",
-            RowAction::Restart => "Restart",
-            RowAction::Freeze => "Freeze",
-            RowAction::Unfreeze => "Unfreeze",
-            RowAction::Delete => "Delete",
-        }
-    }
-
-    /// Past tense used in the success toast.
-    fn verb(self) -> &'static str {
-        match self {
-            RowAction::Start => "started",
-            RowAction::Stop => "stopped",
-            RowAction::Restart => "restarted",
-            RowAction::Freeze => "frozen",
-            RowAction::Unfreeze => "unfrozen",
-            RowAction::Delete => "deleted",
-        }
-    }
-
-    fn icon(self) -> IconName {
-        match self {
-            RowAction::Start | RowAction::Unfreeze => IconName::Play,
-            RowAction::Stop => IconName::Stop,
-            RowAction::Restart => IconName::Restart,
-            RowAction::Freeze => IconName::Pause,
-            RowAction::Delete => IconName::Trash,
-        }
-    }
-
-    /// Stop, restart and delete ask for confirmation (with a Force option).
-    fn needs_confirm(self) -> bool {
-        matches!(self, RowAction::Stop | RowAction::Restart | RowAction::Delete)
-    }
-
-    /// The server action; `None` for delete, which has its own server fn.
-    fn model(self, force: bool) -> Option<Action> {
-        match self {
-            RowAction::Start => Some(Action::Start),
-            RowAction::Stop => Some(Action::Stop { force }),
-            RowAction::Restart => Some(Action::Restart { force }),
-            RowAction::Freeze => Some(Action::Freeze),
-            RowAction::Unfreeze => Some(Action::Unfreeze),
-            RowAction::Delete => None,
-        }
-    }
-}
 
 /// An action in flight on one instance.
 #[derive(Debug, Clone, PartialEq)]
@@ -355,29 +283,6 @@ pub fn InstancesTable(
     }
 }
 
-// ---------------------------------------------------------------- page
-
-fn err_msg(e: &ServerFnError) -> String {
-    match e {
-        ServerFnError::ServerError(m) => m.clone(),
-        other => other.to_string(),
-    }
-}
-
-/// Runs `f` once after `ms` (browser only; the server never needs it).
-fn after_ms(ms: u64, f: impl FnOnce() + 'static) {
-    #[cfg(feature = "hydrate")]
-    set_timeout(f, std::time::Duration::from_millis(ms));
-    #[cfg(not(feature = "hydrate"))]
-    let _ = (ms, f);
-}
-
-#[cfg(feature = "hydrate")]
-fn page_visible() -> bool {
-    use leptos::web_sys::VisibilityState;
-    leptos::prelude::document().visibility_state() == VisibilityState::Visible
-}
-
 #[component]
 pub fn InstancesPage() -> impl IntoView {
     let tick = RwSignal::new(0u32);
@@ -462,10 +367,7 @@ pub fn InstancesPage() -> impl IntoView {
             );
         });
         spawn_local(async move {
-            let result = match action.model(force) {
-                Some(a) => instance_action(name.clone(), a).await.map(|_| ()),
-                None => delete_instance(name.clone(), force).await,
-            };
+            let result = perform(&name, action, force).await;
             // Clears the flag only if it is still the one this action set.
             let unbusy = move |name: &str| {
                 busy.try_update(|b| {
@@ -510,66 +412,7 @@ pub fn InstancesPage() -> impl IntoView {
     let show_error = Memo::new(move |_| rows.with(|r| r.is_empty()) && error.with(|e| e.is_some()));
     let list: Signal<Vec<InstanceSummary>> = rows.into();
     let loading = Signal::derive(move || !loaded.get());
-
-    let confirm = move || {
-        pending.get().map(|(name, action)| {
-            let open = RwSignal::new(true);
-            let force = RwSignal::new(false);
-            Effect::new(move |_| {
-                if !open.get() {
-                    pending.set(None);
-                }
-            });
-            let (title, body, label, force_label, danger) = match action {
-                RowAction::Delete => (
-                    format!("Delete {name}?"),
-                    "This permanently removes the instance and all of its data. This cannot be undone.",
-                    "Delete",
-                    "Force (stop first)",
-                    true,
-                ),
-                RowAction::Restart => (
-                    format!("Restart {name}?"),
-                    "The instance will be shut down and started again.",
-                    "Restart",
-                    "Force (do not wait for a clean shutdown)",
-                    false,
-                ),
-                _ => (
-                    format!("Stop {name}?"),
-                    "The instance will be shut down.",
-                    "Stop",
-                    "Force (do not wait for a clean shutdown)",
-                    false,
-                ),
-            };
-            let extra: ChildrenFn = Arc::new(move || {
-                view! {
-                    <label class="flex cursor-pointer items-center gap-2 text-[13px] text-text-2">
-                        <input
-                            type="checkbox"
-                            class="size-3.5 accent-[var(--accent)]"
-                            prop:checked=move || force.get()
-                            on:change=move |e| force.set(event_target_checked(&e))
-                        />
-                        {force_label}
-                    </label>
-                }
-                .into_any()
-            });
-            view! {
-                <ConfirmModal
-                    open=open
-                    title=title
-                    body=body
-                    confirm_label=label
-                    danger=danger
-                    extra=extra
-                    on_confirm=Callback::new(move |_| run(name.clone(), action, force.get_untracked()))
-                />
-            }
-        })
-    };
+    let confirm_run = Callback::new(move |(name, action, force): (String, RowAction, bool)| run(name, action, force));
 
     let header_actions: ChildrenFn = Arc::new(move || {
         view! {
@@ -607,7 +450,7 @@ pub fn InstancesPage() -> impl IntoView {
                     view! { <InstancesTable rows=list loading=loading on_open=on_open/> }.into_any()
                 }
             }}
-            {confirm}
+            <ActionConfirm pending=pending run=confirm_run/>
         </PageFrame>
     }
 }

@@ -1,5 +1,6 @@
 //! Types shared between server and browser (compiles for ssr and hydrate).
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum InstanceKind {
@@ -32,6 +33,25 @@ pub struct InstanceSummary {
     pub net_tx: u64,
     pub created_at: String,
     pub profiles: Vec<String>,
+}
+
+/// One device of an instance (own or inherited from a profile).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeviceInfo {
+    pub name: String,
+    /// Incus device type: `disk`, `nic`, `proxy`, ...
+    pub kind: String,
+    /// Short human description, e.g. `default:/` for a disk or the network of a nic.
+    pub detail: String,
+}
+
+/// Everything the instance detail page shows.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct InstanceDetail {
+    pub summary: InstanceSummary,
+    /// Expanded config limited to `limits.*`, `image.*` and `cloud-init.*` keys.
+    pub config: BTreeMap<String, String>,
+    pub devices: Vec<DeviceInfo>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

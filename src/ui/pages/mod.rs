@@ -1,9 +1,12 @@
-//! Route pages. Pages other than Instances are placeholders; later tasks replace their bodies.
+//! Route pages. Overview and Images are placeholders; later tasks replace their bodies.
 use leptos::prelude::*;
-use leptos_router::hooks::use_params_map;
 
+mod actions;
+mod instance_detail;
+mod instance_metrics;
 mod instances;
 
+pub use instance_detail::InstancePage;
 pub use instances::InstancesPage;
 
 use super::components::{EmptyState, IconName, PageHeader};
@@ -23,22 +26,6 @@ pub fn OverviewPage() -> impl IntoView {
                 icon=IconName::Overview
                 title="Overview is on its way"
                 body="Host CPU, memory and storage usage will appear here."
-            />
-        </PageFrame>
-    }
-}
-
-#[component]
-pub fn InstancePage() -> impl IntoView {
-    let params = use_params_map();
-    let name = move || params.with(|p| p.get("name").unwrap_or_default());
-    view! {
-        <PageFrame>
-            {move || view! { <PageHeader title=name()/> }}
-            <EmptyState
-                icon=IconName::Instances
-                title="Instance details are on their way"
-                body="Status, metrics, console and snapshots will appear here."
             />
         </PageFrame>
     }

@@ -15,6 +15,11 @@ pub fn format_bytes(bytes: u64) -> String {
     format!("{v:.1} {}", UNITS[unit - 1])
 }
 
+/// A byte rate such as `0 B/s` or `1.5 KiB/s`.
+pub fn format_rate(bytes_per_s: f64) -> String {
+    format!("{}/s", format_bytes(if bytes_per_s.is_finite() { bytes_per_s.max(0.0) as u64 } else { 0 }))
+}
+
 /// Seconds since the Unix epoch for an RFC 3339 timestamp such as
 /// `2026-10-18T10:00:00.123456789Z` or `2026-10-18T17:00:00+07:00`.
 pub fn parse_rfc3339(s: &str) -> Option<i64> {
@@ -88,6 +93,21 @@ pub fn now_secs() -> i64 {
     }
 }
 
+/// Current time in milliseconds since the Unix epoch.
+pub fn now_ms() -> f64 {
+    #[cfg(feature = "hydrate")]
+    {
+        js_sys::Date::now()
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as f64)
+            .unwrap_or(0.0)
+    }
+}
+
 /// Relative age of an RFC 3339 timestamp, or `—` when it cannot be parsed.
 pub fn created_label(created_at: &str) -> String {
     parse_rfc3339(created_at).map(|t| relative_time(t, now_secs())).unwrap_or_else(|| "—".into())
@@ -105,6 +125,14 @@ mod tests {
         assert_eq!(format_bytes(1024 * 1024), "1.0 MiB");
         assert_eq!(format_bytes(1_288_490_189), "1.2 GiB");
         assert_eq!(format_bytes(5 * 1024u64.pow(4)), "5.0 TiB");
+    }
+
+    #[test]
+    fn rates() {
+        assert_eq!(format_rate(0.0), "0 B/s");
+        assert_eq!(format_rate(1536.0), "1.5 KiB/s");
+        assert_eq!(format_rate(-5.0), "0 B/s");
+        assert_eq!(format_rate(f64::NAN), "0 B/s");
     }
 
     #[test]

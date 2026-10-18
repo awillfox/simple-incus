@@ -28,6 +28,9 @@ pub enum IconName {
     Pause,
     Trash,
     Spinner,
+    Terminal,
+    Camera,
+    ArrowLeft,
 }
 
 fn paths(name: IconName) -> &'static str {
@@ -56,6 +59,9 @@ fn paths(name: IconName) -> &'static str {
         IconName::Restart => r#"<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>"#,
         IconName::Pause => r#"<path d="M8 5v14M16 5v14"/>"#,
         IconName::Trash => r#"<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>"#,
+        IconName::Terminal => r#"<rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M13 15h4"/>"#,
+        IconName::Camera => r#"<path d="M4 8a2 2 0 0 1 2-2h1.5l1.2-2h6.6l1.2 2H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z"/><circle cx="12" cy="13" r="3.5"/>"#,
+        IconName::ArrowLeft => r#"<path d="M19 12H5M11 6l-6 6 6 6"/>"#,
         IconName::Spinner => r#"<path d="M12 3a9 9 0 1 0 9 9"/>"#,
     }
 }

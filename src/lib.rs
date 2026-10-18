@@ -1,3 +1,5 @@
+// Deeply nested view! types in the page tests need a higher query depth.
+#![recursion_limit = "256"]
 pub mod app;
 pub mod model;
 pub mod server;

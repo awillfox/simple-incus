@@ -1,7 +1,7 @@
 //! Instance list and lifecycle server functions.
 use leptos::prelude::*;
 
-use crate::model::{Action, InstanceSummary};
+use crate::model::{Action, InstanceDetail, InstanceSummary};
 
 #[cfg(feature = "ssr")]
 mod imp {
@@ -9,7 +9,8 @@ mod imp {
 
     use crate::incus::map::{cpu_limit, cpu_usage_ns, to_summary};
     use crate::incus::{IncusError, Operation};
-    use crate::model::{Action, InstanceSummary};
+    use crate::incus::raw;
+    use crate::model::{Action, DeviceInfo, InstanceDetail, InstanceSummary};
     use crate::state::AppState;
 
     pub const STOP_WAIT_S: u32 = 30;
@@ -37,6 +38,57 @@ mod imp {
         Ok(out)
     }
 
+    fn keep_config(key: &str) -> bool {
+        ["limits.", "image.", "cloud-init."].iter().any(|p| key.starts_with(p))
+    }
+
+    fn device_detail(kind: &str, props: &std::collections::HashMap<String, String>) -> String {
+        let get = |k: &str| props.get(k).map(String::as_str).filter(|v| !v.is_empty());
+        match kind {
+            "disk" => match (get("pool").or(get("source")), get("path")) {
+                (Some(src), Some(path)) => format!("{src}:{path}"),
+                (Some(only), None) | (None, Some(only)) => only.to_string(),
+                (None, None) => String::new(),
+            },
+            "nic" => get("network").or(get("parent")).or(get("nictype")).unwrap_or_default().to_string(),
+            "proxy" => match (get("listen"), get("connect")) {
+                (Some(l), Some(c)) => format!("{l} \u{2192} {c}"),
+                _ => String::new(),
+            },
+            _ => String::new(),
+        }
+    }
+
+    /// One instance with live state, filtered config and devices.
+    /// An unknown name is an `Api` error with status 404.
+    pub async fn get_instance_impl(state: &AppState, name: &str) -> Result<InstanceDetail, IncusError> {
+        let mut r: raw::Instance = state.incus.get_instance(name).await?;
+        r.state = Some(state.incus.instance_state(name).await?);
+        let mut summary = to_summary(&r);
+        if r.status == "Running" {
+            if let Some(usage) = cpu_usage_ns(&r) {
+                let mut cpu = state.cpu.lock().unwrap_or_else(|e| e.into_inner());
+                summary.cpu_pct = cpu.sample_with_limit(&r.name, usage, Instant::now(), cpu_limit(&r));
+            }
+        }
+        let config = r
+            .expanded_config
+            .iter()
+            .filter(|(k, _)| keep_config(k))
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
+        let mut devices: Vec<DeviceInfo> = r
+            .expanded_devices
+            .iter()
+            .map(|(n, props)| {
+                let kind = props.get("type").cloned().unwrap_or_default();
+                DeviceInfo { name: n.clone(), detail: device_detail(&kind, props), kind }
+            })
+            .collect();
+        devices.sort_by(|a, b| a.name.cmp(&b.name));
+        Ok(InstanceDetail { summary, config, devices })
+    }
+
     /// Returns the id of the background operation.
     pub async fn instance_action_impl(state: &AppState, name: &str, action: Action) -> Result<String, IncusError> {
         Ok(state.incus.instance_state_put(name, &action).await?.id)
@@ -45,15 +97,21 @@ mod imp {
     /// Ok only for a finished, successful operation. A wait that timed out
     /// leaves the operation still running, which is reported as a timeout.
     fn check(op: Operation, step: &str) -> Result<(), IncusError> {
+        check_op(op, step, step)
+    }
+
+    /// Like `check`, with separate wording for a failure ("Failed to {fail}")
+    /// and a timeout ("Timed out waiting for {wait}").
+    pub fn check_op(op: Operation, fail: &str, wait: &str) -> Result<(), IncusError> {
         if op.status_code == 200 && op.err.is_empty() {
             return Ok(());
         }
         let message = if !op.err.is_empty() {
             op.err
         } else if op.status_code >= 400 {
-            format!("Failed to {step}: {}", op.status)
+            format!("Failed to {fail}: {}", op.status)
         } else {
-            format!("Timed out waiting for {step}")
+            format!("Timed out waiting for {wait}")
         };
         Err(IncusError::Api { status: 500, message })
     }
@@ -84,7 +142,7 @@ mod imp {
 }
 
 #[cfg(feature = "ssr")]
-pub use imp::{delete_instance_impl, human, instance_action_impl, list_instances_impl};
+pub use imp::{check_op, delete_instance_impl, get_instance_impl, human, instance_action_impl, list_instances_impl};
 
 #[server]
 pub async fn list_instances() -> Result<Vec<InstanceSummary>, ServerFnError> {
@@ -102,4 +160,16 @@ pub async fn instance_action(name: String, action: Action) -> Result<String, Ser
 pub async fn delete_instance(name: String, force: bool) -> Result<(), ServerFnError> {
     let state = expect_context::<crate::state::AppState>();
     delete_instance_impl(&state, &name, force).await.map_err(human)
+}
+
+/// `None` when no instance has that name.
+#[server]
+pub async fn get_instance(name: String) -> Result<Option<InstanceDetail>, ServerFnError> {
+    use crate::incus::IncusError;
+    let state = expect_context::<crate::state::AppState>();
+    match get_instance_impl(&state, &name).await {
+        Ok(d) => Ok(Some(d)),
+        Err(IncusError::Api { status: 404, .. }) => Ok(None),
+        Err(e) => Err(human(e)),
+    }
 }
