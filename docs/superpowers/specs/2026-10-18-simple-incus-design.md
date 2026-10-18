@@ -1,7 +1,7 @@
 # simple-incus — Design
 
 Date: 2026-10-18
-Status: Draft, awaiting approval
+Status: Approved 2026-10-18
 
 ## Intent
 
@@ -23,7 +23,17 @@ polish), not a hobby dashboard.
 - Docker and LXD (snap) are also installed on the host and must keep working.
   A systemd unit `incus-docker-fwd.service` already allows `incusbr0` traffic
   through Docker's `FORWARD DROP` policy.
-- Development machine: Windows 11, project at `D:\Dev\simple-incus`.
+- Bare metal (no hypervisor), `/dev/kvm` present, Incus drivers `qemu | lxc`
+  — VMs fully supported, so VM features (VGA, serial console, agent shell)
+  can be tested on this host.
+- Only the `default` Incus project exists. *(Claude's call: v1 is
+  default-project only; all URLs/IDs use instance name. No project picker.)*
+- No instances exist on the host today, so end-to-end tests may create and
+  destroy instances. *(Claude's call: test instances use the `si-test-`
+  prefix and tests only touch instances with that prefix.)*
+- Development machine: Windows 11, project at `D:\Dev\simple-incus`,
+  repo `git@github.com:awillfox/simple-incus.git`, work on `main`.
+  Commits carry no AI co-author/attribution lines.
 
 ## Goals (v1)
 
@@ -144,6 +154,9 @@ Browser ──HTTP/WS :5000──► simple-incus (axum + Leptos SSR)
   under `/usr/local/share/simple-incus/` (or embedded), systemd unit
   `simple-incus.service`, running as a dedicated system user in the
   `incus-admin` group (socket access) — restart on failure.
+- Deploy auth: SSH key (`~/.ssh/id_ed25519` on the Windows PC) for `jemma`,
+  and passwordless sudo for `jemma` (owner's decision), so the deploy script
+  runs unattended.
 - Deployment step also runs `incus config unset core.https_address`.
 - Config via env vars / small TOML: listen address (default `0.0.0.0:5000`),
   socket path (default `/var/lib/incus/unix.socket`).
@@ -162,4 +175,5 @@ be port-forwarded to the internet. README should state this plainly.
   library vs hand-rolled CSS (Tailwind via cargo-leptos is fine).
 - Test strategy (unit tests for the Incus client against recorded responses
   are encouraged; end-to-end check against the real host).
-- Delivery order of features.
+- Delivery order of features. Owner wants v1 delivered all at once (one
+  deploy at the end), not phased releases.
