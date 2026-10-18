@@ -16,6 +16,12 @@ impl<T: AsyncRead + AsyncWrite + Unpin + Send> Io for T {}
 /// Boxed duplex byte stream (unix or tcp), usable by hyper and tokio-tungstenite.
 pub struct BoxedIo(Box<dyn Io>);
 
+impl std::fmt::Debug for BoxedIo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("BoxedIo")
+    }
+}
+
 impl AsyncRead for BoxedIo {
     fn poll_read(mut self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &mut ReadBuf<'_>) -> Poll<std::io::Result<()>> {
         Pin::new(&mut *self.0).poll_read(cx, buf)

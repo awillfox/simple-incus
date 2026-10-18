@@ -1,58 +1,15 @@
-//! Fake Incus server for tests, plus the client core tests.
-use std::convert::Infallible;
-use std::net::SocketAddr;
-use std::sync::Arc;
+//! Client core tests against the fake Incus server.
+mod common;
 
-use http_body_util::Full;
-use hyper::body::{Bytes, Incoming};
-use hyper::service::service_fn;
-use hyper::{Method, Request, Response as HyperResponse};
-use hyper_util::rt::TokioIo;
+use std::time::{Duration, Instant};
+
+use common::fake_incus::{spawn, spawn_silent, spawn_ws_echo};
+use futures_util::{SinkExt, StreamExt};
+use hyper::Method;
 use serde_json::Value;
 use simple_incus::config::IncusEndpoint;
 use simple_incus::incus::{IncusClient, IncusError, Response};
-use tokio::net::TcpListener;
-
-type Route = (Method, String, u16, Value);
-
-/// Spawns a hyper server on 127.0.0.1:0. Each route is (method, path-without-query, status, JSON body).
-pub async fn spawn(routes: Vec<(Method, &str, u16, Value)>) -> SocketAddr {
-    let routes: Arc<Vec<Route>> =
-        Arc::new(routes.into_iter().map(|(m, p, s, v)| (m, p.to_string(), s, v)).collect());
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let addr = listener.local_addr().unwrap();
-    tokio::spawn(async move {
-        loop {
-            let Ok((sock, _)) = listener.accept().await else { return };
-            let routes = routes.clone();
-            tokio::spawn(async move {
-                let svc = service_fn(move |req: Request<Incoming>| {
-                    let routes = routes.clone();
-                    async move {
-                        let hit = routes
-                            .iter()
-                            .find(|(m, p, _, _)| m == req.method() && p == req.uri().path());
-                        let (status, body) = match hit {
-                            Some((_, _, s, v)) => (*s, v.to_string()),
-                            None => (404, r#"{"type":"error","error":"not found","error_code":404}"#.into()),
-                        };
-                        Ok::<_, Infallible>(
-                            HyperResponse::builder()
-                                .status(status)
-                                .header("content-type", "application/json")
-                                .body(Full::new(Bytes::from(body)))
-                                .unwrap(),
-                        )
-                    }
-                });
-                let _ = hyper::server::conn::http1::Builder::new()
-                    .serve_connection(TokioIo::new(sock), svc)
-                    .await;
-            });
-        }
-    });
-    addr
-}
+use tokio_tungstenite::tungstenite::Message;
 
 fn fixture(name: &str) -> Value {
     let p = format!("{}/tests/fixtures/{name}", env!("CARGO_MANIFEST_DIR"));
@@ -120,4 +77,42 @@ async fn unreachable_is_error_not_panic() {
     let err = c.get::<Value>("/1.0").await.unwrap_err();
     assert!(matches!(err, IncusError::Unreachable(_)), "{err:?}");
     assert!(!c.ping().await);
+}
+
+#[tokio::test]
+async fn stalled_server_times_out_as_unreachable() {
+    let addr = spawn_silent().await;
+    let c = IncusClient::new(IncusEndpoint::Tcp(addr)).with_timeout(Duration::from_millis(300));
+    let t = Instant::now();
+    let err = c.get::<Value>("/1.0").await.unwrap_err();
+    assert!(matches!(err, IncusError::Unreachable(_)), "{err:?}");
+    assert!(t.elapsed() < Duration::from_secs(3));
+    assert!(!c.ping().await);
+}
+
+#[tokio::test]
+async fn ws_echo_roundtrip() {
+    let addr = spawn_ws_echo().await;
+    let c = IncusClient::new(IncusEndpoint::Tcp(addr));
+    let mut ws = c.ws_connect("/1.0/events").await.unwrap();
+    ws.send(Message::text("hi")).await.unwrap();
+    let m = ws.next().await.unwrap().unwrap();
+    assert_eq!(m.into_text().unwrap().as_str(), "hi");
+}
+
+#[tokio::test]
+async fn ws_rejected_upgrade_maps_to_api_error() {
+    let body = serde_json::json!({"type":"error","error":"forbidden secret","error_code":403});
+    let addr = spawn(vec![(Method::GET, "/1.0/operations/x/websocket", 403, body)]).await;
+    let c = IncusClient::new(IncusEndpoint::Tcp(addr));
+    let err = c.ws_connect("/1.0/operations/x/websocket?secret=bad").await.unwrap_err();
+    match err {
+        IncusError::Api { status, message } => {
+            assert_eq!(status, 403);
+            assert_eq!(message, "forbidden secret");
+        }
+        other => panic!("unexpected {other:?}"),
+    }
+    let dead = IncusClient::new(IncusEndpoint::Tcp("127.0.0.1:1".parse().unwrap()));
+    assert!(matches!(dead.ws_connect("/1.0/events").await, Err(IncusError::Unreachable(_))));
 }
