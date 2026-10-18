@@ -1761,6 +1761,7 @@ dependencies = [
  "http-body-util",
  "hyper",
  "hyper-util",
+ "js-sys",
  "leptos",
  "leptos_axum",
  "leptos_meta",

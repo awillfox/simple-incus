@@ -21,6 +21,13 @@ pub enum IconName {
     Info,
     Inbox,
     Logo,
+    Plus,
+    Play,
+    Stop,
+    Restart,
+    Pause,
+    Trash,
+    Spinner,
 }
 
 fn paths(name: IconName) -> &'static str {
@@ -43,6 +50,13 @@ fn paths(name: IconName) -> &'static str {
         IconName::Info => r#"<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.5h.01"/>"#,
         IconName::Inbox => r#"<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/>"#,
         IconName::Logo => r#"<path d="M12 2.8 20 7.4v9.2l-8 4.6-8-4.6V7.4l8-4.6Z"/><path d="M4 7.4l8 4.6 8-4.6M12 12v9.2"/>"#,
+        IconName::Plus => r#"<path d="M12 5v14M5 12h14"/>"#,
+        IconName::Play => r#"<path d="M7 4.5v15l12-7.5-12-7.5Z"/>"#,
+        IconName::Stop => r#"<rect x="6" y="6" width="12" height="12" rx="1.5"/>"#,
+        IconName::Restart => r#"<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>"#,
+        IconName::Pause => r#"<path d="M8 5v14M16 5v14"/>"#,
+        IconName::Trash => r#"<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>"#,
+        IconName::Spinner => r#"<path d="M12 3a9 9 0 1 0 9 9"/>"#,
     }
 }
 

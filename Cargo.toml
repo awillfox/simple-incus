@@ -15,7 +15,7 @@ leptos_axum = { version = "0.8.0", optional = true }
 leptos_meta = { version = "0.8.0" }
 tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "time", "io-util"], optional = true }
 wasm-bindgen = { version = "0.2.106", optional = true }
-web-sys = { version = "0.3", optional = true, features = ["WebSocket", "MessageEvent", "CloseEvent", "Window", "Location", "Document", "Element", "Storage"] }
+web-sys = { version = "0.3", optional = true, features = ["WebSocket", "MessageEvent", "CloseEvent", "Window", "Location", "Document", "Element", "Storage", "VisibilityState"] }
 anyhow = { version = "1", optional = true }
 socket2 = { version = "0.5", optional = true }
 hyper = { version = "1", features = ["http1", "client", "server"], optional = true }
@@ -26,6 +26,7 @@ serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 thiserror = "2.0.21"
 futures-util = "0.3.34"
+js-sys = { version = "0.3", optional = true }
 
 [features]
 hydrate = [
@@ -33,6 +34,7 @@ hydrate = [
     "dep:console_error_panic_hook",
     "dep:wasm-bindgen",
     "dep:web-sys",
+    "dep:js-sys",
 ]
 ssr = [
     "dep:axum",

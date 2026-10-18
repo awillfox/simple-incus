@@ -2,6 +2,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
+/// Incus reports "unknown" usage (e.g. the disk of a stopped instance) as `-1`;
+/// read any negative or missing counter as 0.
+fn counter<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u64, D::Error> {
+    let v = i128::deserialize(d)?;
+    Ok(u64::try_from(v).unwrap_or(0))
+}
+
 /// Incus response envelope.
 #[derive(Debug, Deserialize)]
 pub(crate) struct Envelope {
@@ -71,21 +78,21 @@ pub struct InstanceState {
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct CpuState {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "counter")]
     pub usage: u64,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct MemoryState {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "counter")]
     pub usage: u64,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "counter")]
     pub usage_peak: u64,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct DiskState {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "counter")]
     pub usage: u64,
 }
 
@@ -109,8 +116,21 @@ pub struct Address {
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct NetCounters {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "counter")]
     pub bytes_received: u64,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "counter")]
     pub bytes_sent: u64,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn negative_usage_reads_as_zero() {
+        let st: InstanceState =
+            serde_json::from_str(r#"{"status":"Stopped","disk":{"root":{"usage":-1}},"memory":{"usage":-1}}"#).unwrap();
+        assert_eq!(st.disk.unwrap()["root"].usage, 0);
+        assert_eq!(st.memory.unwrap().usage, 0);
+    }
 }
