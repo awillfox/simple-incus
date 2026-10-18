@@ -19,6 +19,7 @@
 - No runtime internet loads in the browser: fonts, xterm.js, spice-html5 are vendored under `public/` and served by the binary. Only server-side fetch allowed: `https://images.linuxcontainers.org/streams/v1/` (catalog).
 - No `alert()` / `confirm()` / `prompt()` — in-app modals only.
 - Look: high-end enterprise; dark theme default with light toggle; dense tables; status pills; toasts.
+- **Desktop-first** (owner decision 2026-10-18): design and verify at 1440 px and 1280 px first; narrow/mobile widths are best-effort only (must not be broken, but no dedicated mobile layouts or 390 px polish).
 - Test instances are named with prefix `si-test-`; e2e tests touch nothing else.
 - Must not break Docker or LXD on the host.
 - Commits: conventional style, **no AI co-author / attribution lines**. Work on `main`, push to `origin` (`git@github.com:awillfox/simple-incus.git`).

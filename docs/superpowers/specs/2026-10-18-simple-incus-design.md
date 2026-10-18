@@ -92,6 +92,7 @@ polish), not a hobby dashboard.
 | Create form | Advanced (profiles, network, pool, cloud-init) |
 | Live updates | Incus event stream; stats still polled |
 | Look | High-end, enterprise-grade |
+| Layout priority | Desktop-first (1280–1440 px+); mobile best-effort |
 
 ## Architecture (Claude's proposal — builder may refine)
 
