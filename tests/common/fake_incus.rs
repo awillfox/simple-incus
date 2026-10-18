@@ -110,7 +110,16 @@ pub async fn spawn_ws_echo() -> SocketAddr {
 /// `scripts[N]` as text frames, then closes (except the last script, which stays open).
 /// Connections past the script stay open and silent.
 pub async fn spawn_ws_script(scripts: Vec<Vec<Value>>, delay: std::time::Duration) -> SocketAddr {
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    spawn_ws_script_at("127.0.0.1:0".parse().unwrap(), scripts, delay).await
+}
+
+/// Like [`spawn_ws_script`] but binds a specific address (e.g. a port that was dead earlier).
+pub async fn spawn_ws_script_at(
+    at: SocketAddr,
+    scripts: Vec<Vec<Value>>,
+    delay: std::time::Duration,
+) -> SocketAddr {
+    let listener = TcpListener::bind(at).await.unwrap();
     let addr = listener.local_addr().unwrap();
     tokio::spawn(async move {
         let mut n = 0usize;

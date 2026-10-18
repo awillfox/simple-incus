@@ -68,8 +68,13 @@ async fn run(client: IncusClient, hub: EventHub, base: Duration) {
         }
         hub.connected.send_replace(false);
         tokio::time::sleep(delay).await;
-        delay = (delay * 2).min(base * MAX_FACTOR);
+        delay = next_delay(delay, base);
     }
+}
+
+/// Doubles `delay`, capped at 30x `base` (1,2,4,8,16,30,30... s for a 1 s base).
+pub fn next_delay(delay: Duration, base: Duration) -> Duration {
+    (delay * 2).min(base * MAX_FACTOR)
 }
 
 /// Maps one Incus event frame; other event types yield `None`.
