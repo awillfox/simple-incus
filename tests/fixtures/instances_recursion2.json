@@ -1,0 +1,1 @@
+{"type":"sync","status":"Success","status_code":200,"error_code":0,"error":"","metadata":[{"name":"web1","status":"Running","status_code":103,"type":"container","architecture":"x86_64","config":{},"devices":{},"profiles":["default"],"project":"default","state":{"status":"Running","cpu":{"usage":123456789},"memory":{"usage":52428800,"total":0}}}]}

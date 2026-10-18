@@ -13,10 +13,18 @@ axum = { version = "0.8.0", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 leptos_axum = { version = "0.8.0", optional = true }
 leptos_meta = { version = "0.8.0" }
-tokio = { version = "1", features = ["rt-multi-thread", "net", "macros"], optional = true }
+tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "time", "io-util"], optional = true }
 wasm-bindgen = { version = "0.2.106", optional = true }
 anyhow = { version = "1", optional = true }
 socket2 = { version = "0.5", optional = true }
+hyper = { version = "1", features = ["http1", "client", "server"], optional = true }
+hyper-util = { version = "0.1.21", features = ["tokio"], optional = true }
+http-body-util = { version = "0.1.5", optional = true }
+tokio-tungstenite = { version = "0.30.0", optional = true }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+thiserror = "2.0.21"
+futures-util = "0.3.34"
 
 [features]
 hydrate = [
@@ -30,6 +38,10 @@ ssr = [
     "dep:leptos_axum",
     "dep:anyhow",
     "dep:socket2",
+    "dep:hyper",
+    "dep:hyper-util",
+    "dep:http-body-util",
+    "dep:tokio-tungstenite",
     "leptos/ssr",
     "leptos_meta/ssr",
     "leptos_router/ssr",
@@ -104,3 +116,7 @@ lib-default-features = false
 #
 # Optional. Defaults to "release".
 lib-profile-release = "wasm-release"
+
+[[example]]
+name = "ping"
+required-features = ["ssr"]
