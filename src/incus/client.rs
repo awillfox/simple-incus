@@ -240,6 +240,10 @@ impl IncusClient {
         expect_async(self.send::<_, serde_json::Value>(Method::POST, "/1.0/instances", Some(body)).await?)
     }
 
+    pub async fn get_operation(&self, op_id: &str) -> Result<Operation, IncusError> {
+        self.get(&format!("/1.0/operations/{}", encode_segment(op_id))).await
+    }
+
     pub async fn resources(&self) -> Result<raw::Resources, IncusError> {
         self.get("/1.0/resources").await
     }

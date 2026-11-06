@@ -1,68 +1,66 @@
 # HANDOFF — simple-incus v1
 
-Snapshot rechecked 2026-11-06, replacing the 2026-10-18 version. Read this file first when picking the work back up.
+Snapshot rechecked 2026-11-06 after finishing the Task 10 fixes and live tests. Read this file first when picking the work back up.
 
 ## Where we are
 
-**Tasks 1–9 are done and pushed. Task 10 (create instance) is written but uncommitted, unreviewed, and never tried in a real browser.** Tasks 11–13 and the final review haven't started.
+**Tasks 1–9 are done. Task 10 (create instance) is fixed, reviewed, passes live tests on the real host, and is pushed to `feat/resume_task`, but not yet merged to `main`.** Tasks 11–13 and the final review haven't started.
 
-No code has changed since the last session stopped on 2026-10-18: the newest source edit is from 23:42 that night.
+### Git state: read this first
 
-| Check on 2026-11-06 | Result |
+- On 2026-11-06 at 12:39, commit `76f059c` "some work" landed with the *original* Task 10 draft and an earlier `HANDOFF.md`. `origin/main` points at it, so **the unreviewed draft is already on `main`**.
+- The checkout then moved to a new branch, **`feat/resume_task`**, at the same commit. The Task 10 fixes are committed on top of it as `feat: advanced create instance` and pushed to that branch.
+- This replaces "all work happens on `main`" until the owner says otherwise. The owner merges to `main`; **`origin/main` lacks the fixes until then**. Don't push to `main`.
+- A Task 10 review must cover `git diff 0d73b04`, not plain `git diff`, or it misses the draft.
+
+### Verified on 2026-11-06
+
+| Check | Result |
 |---|---|
-| `main` vs `origin/main` | In sync at `0d73b04`; no stashes |
-| `cargo test --features ssr` | ✅ 100 passed, 0 failed, including 8 in `tests/create.rs` |
+| `cargo test --features ssr` | ✅ 109 passed, 0 failed |
 | Wasm check (hydrate) | ✅ Passes |
-| `cargo clippy --features ssr --all-targets` | 5 warnings, none in Task 10 files (`data_table.rs`, `server/images.rs`, `server/snapshots.rs`) |
-| Task 10 implementer report | ❌ Missing: no `task-10-report.md` in the ledger |
-| Task 10 review | ❌ Not run |
-| Task 10 manual test (plan Step 3) | ❌ Not done: no screenshots, no instances on the host |
+| `cargo clippy --features ssr --all-targets` | 5 warnings, none in Task 10 code (`data_table.rs`, `server/images.rs`, `server/snapshots.rs`) |
+| Live create: container (`alpine/3.24`) | ✅ Live progress, reached Running in about 8 s |
+| Live create: VM (`ubuntu/24.04`, 2 CPU, 2048 MiB, 20 GiB) | ✅ Reached Running; limits and disk size confirmed on the host |
+| Live create: network, pool, cloud-init, start unticked | ✅ Stayed Stopped; config and devices confirmed on the host |
+| Operation failure (VM on a 1 GiB disk) | ✅ Sticky error toast with the Incus message; nothing left behind |
+| Duplicate and invalid names, no profile selected | ✅ Clear message shown in the form |
+| Images "Launch" with a local image | ✅ Image preselected; type locked to what it supports |
+| Tunnel cut for 25 s mid-create | ✅ Toast showed "Created" 0.6 s after the tunnel returned |
+| Final event dropped, socket healthy (simulated in the browser) | ✅ Polling finished the create |
+| Busy toast closed, then the create fails | ✅ Error toast still appears |
+| Cancel during a slow request, then reopen | ✅ Second form stays open with its input |
+| Options fail to load (tunnel down) | ✅ Error shown in the form |
+| Layout: 1440 and 1280 px, dark and light | ✅ Screenshots in the ledger's `screens/task10-*` |
 
-The Task 10 implementer's last state isn't recorded and it can't be resumed. Treat the working tree as a draft that compiles and passes tests.
+Local images weren't used for a full create, only for the prefill and type lock. Live tests ran in headless Chrome driven by a throwaway script, since the Chrome extension wasn't connected.
+
+### What changed in the fix round
+
+- **Stale image:** Instances "Create instance" now clears the preselected image. Reproduced in the browser before the fix.
+- **Lost final event:** new `create_status` server fn; `CreateDrawer` polls it every 5 s while a create is tracked, because events can be missed through an outage or a lagging browser. If Incus has forgotten the operation, the instance settles it: it must exist and, if a start was requested, be Running.
+- **Profiles:** selecting none is now blocked with a visible message. This was a judgment call; the alternative is sending an empty list.
+- **Disk size with no root pool:** now rejected with a clear 400 before Incus is called.
+- **Footer:** the sticky footer left a 20 px gap where content showed through. Found only in the browser.
+- **Toast:** `toast_set_text` read its signal with tracking on, so the event Effect subscribed by accident. Found through a console warning.
+- **Tests:** `ev.status` is now asserted.
+- **From review:** closing the busy toast no longer hides the result; a late response only closes the form that sent it; a failure to load form options is now shown.
+
+### Review findings not acted on
+
+The review ran on `git diff 0d73b04`.
+- **`default` profile could be missing:** rejected. Incus doesn't allow deleting or renaming it, as far as I know; not tested on the host.
+- **Stricter snapshot names:** rejected. This is ruling R8.
+- **Deferred:** see "Deferred minor findings".
 
 ## Next steps
 
-1. **Finish Task 10** using the checklist below, then commit as `feat: advanced create instance` and push.
-2. Run **Task 11** (web shell) and **Task 12** (consoles) through the same implement, review and push loop.
-3. Run **Task 13** (deploy). It runs on the real host and turns off the official Incus HTTPS listener.
-4. Run the final whole-branch review on the most capable model, then do one fix wave.
-5. Report the rulings to the owner, then use `superpowers:finishing-a-development-branch`.
-
-## Finishing Task 10
-
-The plan is at `docs/superpowers/plans/2026-10-18-simple-incus-v1.md`, line 236. Steps 1 and 2 (tests, implementation) look done. Steps 3 and 4 (manual test, commit) are open.
-
-### Uncommitted work
-
-- **New:** `src/server/create.rs`, `src/ui/pages/create.rs`, `src/ui/pages/create_image.rs`, `tests/create.rs`.
-- **Changed to support it:**
-  - `toast.rs`: busy and updatable toasts.
-  - `drawer.rs`: width prop.
-  - `incus/client.rs`, `incus/raw.rs`: profiles, networks, create.
-  - `model.rs`: `CreateOptions`, `validate_name`, `UiEvent.status`.
-  - `incus/events.rs`: maps `status`.
-  - `server/snapshots.rs`: uses the shared `validate_name` (R8).
-  - `app.rs`: mounts `CreateDrawer`.
-- The `UiEvent` field addition also touched `ui/events.rs`, `ui/pages/overview.rs` and `tests/events.rs`.
-- Git prints "CRLF will be replaced by LF" warnings. They're harmless (`.gitattributes` sets `eol=lf`).
-
-### Problems found by reading the code
-
-None of these has been reproduced yet. Confirm each one, then fix it or rule on it.
-
-1. **Stale preselected image (likely bug).** `src/ui/pages/instances.rs:420` calls `create.open.set(true)` and nothing clears `prefill`. So Images "Launch", then Cancel, then Instances "Create instance" probably opens with the old image selected. Fix: use `create.open_with(None)`.
-2. **Toast can spin forever.** `CreateDrawer` doesn't react to `use_incus_connected()`, and events aren't replayed after an outage. If the socket drops while a create runs, the final event is lost and the busy toast never ends. The other live pages refetch on reconnect; this one should too.
-3. **No test for the new status mapping.** `maps_operation_progress` in `tests/events.rs` has `"status":"Running"` in its input but never asserts `ev.status`. The create toast's Success and Failure handling depends on this field.
-4. **Deselecting all profiles is ignored.** The chips allow an empty selection, but `create_body` then sends `["default"]`. Either block the empty selection or send it as is.
-5. **Disk size with no root pool.** If no selected profile has a root device, the body gets a root device without `pool`, so Incus will presumably reject it. Check that the error reads clearly.
-
-### Steps to close it out
-
-1. Confirm and fix the problems above, adding tests where the logic is testable.
-2. Run the live dev setup (see "Dev environment"). From the UI, create `si-test-c` (Alpine container) and `si-test-vm` (`ubuntu/24.04` VM). Progress must show and both must reach Running.
-3. Also check: the failure path (sticky error toast), Images "Launch" prefill, type toggle disabled per image, and the layout at 1440 and 1280 px, dark and light. Save screenshots to the ledger's `screens/`.
-4. Delete the `si-test-*` instances and the images they pulled.
-5. Re-run the tests and the wasm check, get the review done, then commit and push.
+1. Ask the owner whether `feat/resume_task` has been merged, and which branch later tasks should use (see "Git state").
+2. Update the ledger's last line, which still says "Task 10: dispatched".
+3. Run **Task 11** (web shell) and **Task 12** (consoles) through the same implement, review and push loop.
+4. Run **Task 13** (deploy). It runs on the real host and turns off the official Incus HTTPS listener.
+5. Run the final whole-branch review on the most capable model, then do one fix wave.
+6. Report the rulings to the owner, then use `superpowers:finishing-a-development-branch`.
 
 ## What this project is
 
@@ -71,7 +69,7 @@ It runs on the Incus host, talks to incusd over `/var/lib/incus/unix.socket`, an
 
 - **Spec (binding):** `docs/superpowers/specs/2026-10-18-simple-incus-design.md`
 - **Plan (13 tasks):** `docs/superpowers/plans/2026-10-18-simple-incus-v1.md`
-- **Repo:** `git@github.com:awillfox/simple-incus.git`. All work happens on `main`.
+- **Repo:** `git@github.com:awillfox/simple-incus.git`. Current branch: `feat/resume_task` (see "Git state").
 - **Git identity:** set for this repo only, as `awillfox <natee.singkong@gmail.com>`.
 
 ## Owner rules (follow these)
@@ -105,7 +103,7 @@ The local ledger is `.superpowers/sdd/2026-10-18-simple-incus-v1/progress.md`. I
 | 7 Instances page (live, actions) | ✅ done | 62212dd..5a0b7d1 |
 | 8 Instance detail: summary, snapshots, metrics | ✅ done | 91e420e |
 | 9 Images (local + catalog) + Overview | ✅ done | a1bcf77..929dc8b |
-| 10 Create instance (advanced) | 🔄 **uncommitted draft**; needs fixes, manual test, review | — |
+| 10 Create instance (advanced) | ✅ **reviewed and live-tested**; on `feat/resume_task`, not merged | 76f059c (draft) + `feat: advanced create instance` |
 | 11 WS proxy + web shell (xterm.js) | ⏳ todo | — |
 | 12 Text console + VGA (SPICE) | ⏳ todo | — |
 | 13 Deploy (systemd, deploy.ps1), README update, end-to-end check | ⏳ todo | — |
@@ -141,6 +139,9 @@ The local ledger is `.superpowers/sdd/2026-10-18-simple-incus-v1/progress.md`. I
 - **CPU tracking:** the host thread count is fixed at startup, and concurrent list calls share the `CpuTracker`.
 - **Dependencies:** serde, thiserror and futures-util are non-optional, so they're compiled into wasm.
 - **Clippy:** the 5 warnings listed in "Where we are".
+- **Instances table:** 2 px of horizontal overflow at 1280 px, so a scrollbar shows; row actions stay visible.
+- **Create form:** opening it fetches local images and the catalog whichever tab is shown, and "Launch" fetches them again; a failed Launch prefill shows no error.
+- **Create code:** Incus status strings are mapped in both `ui/pages/create.rs` and `server/create.rs`; the `default` profile fallback in `server/create.rs` is now unreachable from the UI; the all-digits check in `validate_name` can never fire.
 
 The ledger has more small items, listed per task.
 
@@ -165,9 +166,9 @@ The ledger has more small items, listed per task.
 - **Also running:** Docker and the LXD snap. The `incus-docker-fwd.service` unit lets `incusbr0` traffic through Docker's `FORWARD DROP`.
 - **Test rule:** tests may only create or delete `si-test-*` instances.
 
-State on 2026-11-06, checked read-only:
+State on 2026-11-06, after cleanup:
 
-- **Instances:** none, so there are no `si-test-*` leftovers to clean up.
-- **Images:** none. The cached Alpine 3.21 image `f17d529e9e66` the old handoff said to keep is gone, probably through Incus's automatic cache expiry (not confirmed). The first Alpine create will download it again.
-- **Operations:** none. The old official-UI trust-token operation is no longer pending, so Task 13 has nothing to clean up there.
+- **Instances and images:** none. All `si-test-*` instances and images from the tests were deleted, so the first create re-downloads its image. The Alpine image `f17d529e9e66` the old handoff said to keep was already gone, and the catalog now offers Alpine 3.24, not 3.21.
+- **Operations:** none. The old official-UI trust-token operation is no longer pending.
+- **Official Incus UI:** still live, with `core.https_address` at `[::]:5000` until Task 13.
 - **`simple-incus` service:** not installed yet, as expected before Task 13.

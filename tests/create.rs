@@ -8,8 +8,8 @@ use hyper::Method;
 use serde_json::{json, Value};
 use simple_incus::config::IncusEndpoint;
 use simple_incus::incus::{EventHub, IncusClient, IncusError};
-use simple_incus::model::{CreateRequest, ImageSource, InstanceKind};
-use simple_incus::server::create::{create_body, create_instance_impl, create_options_impl};
+use simple_incus::model::{CreateRequest, CreateStatus, ImageSource, InstanceKind};
+use simple_incus::server::create::{create_body, create_instance_impl, create_options_impl, create_status_impl};
 use simple_incus::state::AppState;
 
 fn state(addr: std::net::SocketAddr) -> AppState {
@@ -170,4 +170,69 @@ async fn options_list_managed_networks_only() {
     assert_eq!(o.profiles, ["default", "web"]);
     assert_eq!(o.networks, ["incusbr0"]);
     assert_eq!(o.pools, ["default"]);
+}
+
+#[tokio::test]
+async fn disk_override_with_no_root_pool_in_any_profile_is_rejected_before_create() {
+    let (addr, calls) = spawn_recording(vec![
+        (Method::GET, "/1.0/profiles/bare", 200, sync(json!({"name":"bare","devices":{}}))),
+        (Method::POST, "/1.0/instances", 202, fixture("operation_running.json")),
+    ])
+    .await;
+    let mut r = req();
+    r.profiles = vec!["bare".into()];
+    r.disk_gib = Some(10);
+    let e = create_instance_impl(&state(addr), &r).await.unwrap_err();
+    assert!(matches!(e, IncusError::Api { status: 400, .. }), "{e:?}");
+    assert!(calls.lock().unwrap().iter().all(|c| c.0 != Method::POST), "must not reach Incus create");
+}
+
+fn op(status: &str, err: &str) -> Value {
+    sync(json!({"id":"op1","status":status,"status_code":0,"err":err}))
+}
+
+#[tokio::test]
+async fn status_of_live_operation_follows_incus() {
+    for (status, err, want) in [
+        ("Running", "", CreateStatus::Running),
+        ("Success", "", CreateStatus::Done),
+        ("Failure", "Image not found", CreateStatus::Failed("Image not found".into())),
+    ] {
+        let addr = common::fake_incus::spawn(vec![(Method::GET, "/1.0/operations/op1", 200, op(status, err))]).await;
+        assert_eq!(create_status_impl(&state(addr), "op1", "si-test-c", true).await.unwrap(), want, "{status}");
+    }
+}
+
+async fn expired_op_status(instance_status: &str, start: bool) -> CreateStatus {
+    let addr = common::fake_incus::spawn(vec![(
+        Method::GET,
+        "/1.0/instances/si-test-c",
+        200,
+        sync(json!({"name":"si-test-c","status":instance_status})),
+    )])
+    .await;
+    create_status_impl(&state(addr), "op1", "si-test-c", start).await.unwrap()
+}
+
+#[tokio::test]
+async fn expired_operation_with_running_instance_counts_as_done() {
+    assert_eq!(expired_op_status("Running", true).await, CreateStatus::Done);
+}
+
+#[tokio::test]
+async fn expired_operation_with_stopped_instance_is_done_when_start_was_not_requested() {
+    assert_eq!(expired_op_status("Stopped", false).await, CreateStatus::Done);
+}
+
+#[tokio::test]
+async fn expired_operation_with_stopped_instance_failed_when_start_was_requested() {
+    let got = expired_op_status("Stopped", true).await;
+    assert!(matches!(got, CreateStatus::Failed(_)), "{got:?}");
+}
+
+#[tokio::test]
+async fn expired_operation_with_no_instance_counts_as_failed() {
+    let addr = common::fake_incus::spawn(vec![]).await;
+    let got = create_status_impl(&state(addr), "op1", "si-test-c", true).await.unwrap();
+    assert!(matches!(got, CreateStatus::Failed(_)), "{got:?}");
 }

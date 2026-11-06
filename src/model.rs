@@ -131,6 +131,14 @@ pub struct CreateOptions {
     pub pools: Vec<String>,
 }
 
+/// Where a create operation stands, for catching up after missed events.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CreateStatus {
+    Running,
+    Done,
+    Failed(String),
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UiEventKind {
     Lifecycle,
