@@ -23,6 +23,12 @@ pub const CLOUD_INIT_TEMPLATE: &str = "#cloud-config\n";
 /// Operation events kept so a result that beats the server fn response is not lost.
 const SEEN_MAX: usize = 32;
 
+/// How often running creates are checked directly. Events can be missed (an
+/// outage, or a slow browser lagging the broadcast), so they alone can't be
+/// relied on to end a create.
+#[cfg(feature = "hydrate")]
+const STATUS_POLL_MS: u64 = 5000;
+
 /// How an Incus operation event reads for the create toast.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Outcome {
@@ -77,6 +83,9 @@ pub fn parse_positive(s: &str) -> Result<Option<u64>, String> {
 pub fn build_request(v: &FormValues) -> Result<CreateRequest, String> {
     validate_name(&v.name)?;
     let image = v.image.clone().ok_or("Choose an image")?;
+    if v.profiles.is_empty() {
+        return Err("Select at least one profile".to_string());
+    }
     let cpu = parse_positive(&v.cpu)?;
     let cpu = match cpu {
         Some(n) => Some(u32::try_from(n).map_err(|_| "CPU count is too large".to_string())?),
@@ -104,13 +113,20 @@ pub fn build_request(v: &FormValues) -> Result<CreateRequest, String> {
 struct Tracked {
     op_id: String,
     name: String,
+    // Read only by the browser's status polling.
+    #[cfg_attr(not(feature = "hydrate"), allow(dead_code))]
+    start: bool,
     toast: Option<u64>,
 }
 
 /// Applies one operation event to a tracked create; returns true when finished.
 fn apply(t: &Tracked, ev: &UiEvent, navigate: Callback<String>) -> bool {
+    apply_outcome(t, outcome(ev), navigate)
+}
+
+fn apply_outcome(t: &Tracked, result: Outcome, navigate: Callback<String>) -> bool {
     let id = t.toast;
-    match outcome(ev) {
+    match result {
         Outcome::Progress(text) => {
             if let Some(id) = id {
                 toast_set_text(id, format!("Creating {}: {text}", t.name));
@@ -167,9 +183,37 @@ pub fn CreateDrawer() -> impl IntoView {
         }
     });
 
+    // Events can be missed, so also ask where each running create stands.
+    #[cfg(feature = "hydrate")]
+    if let Ok(handle) = set_interval_with_handle(
+        move || {
+            for t in tracked.try_get_value().unwrap_or_default() {
+                spawn_local(async move {
+                    use crate::model::CreateStatus;
+                    let status = crate::server::create::create_status(t.op_id.clone(), t.name.clone(), t.start);
+                    let result = match status.await {
+                        Ok(CreateStatus::Done) => Outcome::Done,
+                        Ok(CreateStatus::Failed(why)) => Outcome::Failed(why),
+                        // Still running, or the check failed: try again on the next tick.
+                        Ok(CreateStatus::Running) | Err(_) => return,
+                    };
+                    // An event may have finished it while we were asking.
+                    let live = tracked.try_with_value(|l| l.iter().any(|x| x.op_id == t.op_id)).unwrap_or(false);
+                    if live {
+                        tracked.try_update_value(|l| l.retain(|x| x.op_id != t.op_id));
+                        apply_outcome(&t, result, go);
+                    }
+                });
+            }
+        },
+        std::time::Duration::from_millis(STATUS_POLL_MS),
+    ) {
+        on_cleanup(move || handle.clear());
+    }
+
     // Called by the form once Incus accepted the request.
-    let started = Callback::new(move |(op_id, name): (String, String)| {
-        let t = Tracked { toast: toast_busy(format!("Creating {name}...")), op_id: op_id.clone(), name };
+    let started = Callback::new(move |(op_id, name, start): (String, String, bool)| {
+        let t = Tracked { toast: toast_busy(format!("Creating {name}...")), op_id: op_id.clone(), name, start };
         // The operation may already have reported before we knew its id.
         let early = seen.try_with_value(|s| s.iter().find(|e| e.op_id.as_deref() == Some(&op_id)).cloned());
         match early.flatten() {
@@ -223,7 +267,7 @@ fn kind_class(active: bool) -> &'static str {
 }
 
 #[component]
-fn CreateForm(started: Callback<(String, String)>) -> impl IntoView {
+fn CreateForm(started: Callback<(String, String, bool)>) -> impl IntoView {
     let state = use_create_drawer();
     let prefill = state.prefill.get_untracked();
 
@@ -290,12 +334,16 @@ fn CreateForm(started: Callback<(String, String)>) -> impl IntoView {
         }
         busy.set(true);
         error.set(None);
-        let name = req.name.clone();
+        let (name, wants_start) = (req.name.clone(), req.start);
         spawn_local(async move {
             match create_instance(req).await {
                 Ok(op_id) => {
-                    started.run((op_id, name));
-                    state.open.try_set(false);
+                    started.run((op_id, name, wants_start));
+                    // Only if this form is still mounted: the user may have
+                    // cancelled and reopened the drawer for another instance.
+                    if busy.try_get_untracked().is_some() {
+                        state.open.try_set(false);
+                    }
                 }
                 Err(e) => {
                     error.try_set(Some(err_msg(&e)));
@@ -431,10 +479,24 @@ fn CreateForm(started: Callback<(String, String)>) -> impl IntoView {
 
                 <section aria-label="Network and storage">
                     {section("Network & Storage")}
+                    {move || {
+                        options.get().and_then(Result::err).map(|e| {
+                            view! {
+                                <p class="mb-3 text-[12px] text-danger" role="alert">
+                                    {format!("Could not load profiles, networks and pools: {}. Close and reopen this panel to retry.", err_msg(&e))}
+                                </p>
+                            }
+                        })
+                    }}
                     <div class="space-y-4">
                         <div>
                             <span class="mb-1 block text-[12px] font-medium text-text-2">"Profiles"</span>
                             <div class="flex flex-wrap gap-2">{profile_chips}</div>
+                            {move || {
+                                profiles.with(|l| l.is_empty()).then(|| {
+                                    view! { <p class="mt-1.5 text-[12px] text-danger" role="alert">"Select at least one profile."</p> }
+                                })
+                            }}
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <Field label="Network" hint="Managed networks only.">
@@ -460,7 +522,7 @@ fn CreateForm(started: Callback<(String, String)>) -> impl IntoView {
                 </section>
             </div>
 
-            <div class="sticky bottom-0 -mx-5 -mb-5 mt-6 border-t border-border bg-surface px-5 py-3">
+            <div class="sticky -bottom-5 -mx-5 -mb-5 mt-6 border-t border-border bg-surface px-5 py-3">
                 {move || {
                     error
                         .get()
@@ -502,7 +564,7 @@ mod tests {
             cpu: String::new(),
             memory: String::new(),
             disk: String::new(),
-            profiles: vec![],
+            profiles: vec!["default".into()],
             network: String::new(),
             pool: String::new(),
             cloud_init: CLOUD_INIT_TEMPLATE.into(),
@@ -546,6 +608,13 @@ mod tests {
         v.disk = "10".into();
         let r = build_request(&v).unwrap();
         assert_eq!((r.cpu, r.memory_mib, r.disk_gib), (Some(2), Some(2048), Some(10)));
+    }
+
+    #[test]
+    fn at_least_one_profile_is_required() {
+        let mut v = values();
+        v.profiles.clear();
+        assert!(build_request(&v).is_err());
     }
 
     #[test]

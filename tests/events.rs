@@ -45,6 +45,7 @@ fn maps_operation_progress() {
     assert_eq!(ev.op_id.as_deref(), Some("abc-123"));
     assert_eq!(ev.progress.as_deref(), Some("rootfs: 45% (12.3MB/s)"));
     assert_eq!(ev.message, "Creating instance");
+    assert_eq!(ev.status.as_deref(), Some("Running"));
 
     let failed = json!({"type":"operation","metadata":{"id":"x","description":"Creating instance","err":"boom"}});
     assert_eq!(map_event(&failed).unwrap().message, "Creating instance failed: boom");

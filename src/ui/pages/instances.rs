@@ -417,7 +417,7 @@ pub fn InstancesPage() -> impl IntoView {
     let header_actions: ChildrenFn = Arc::new(move || {
         view! {
             <InstancesStats rows=list/>
-            <button type="button" class="btn btn-primary" on:click=move |_| create.open.set(true)>
+            <button type="button" class="btn btn-primary" on:click=move |_| create.open_with(None)>
                 <Icon name=IconName::Plus/>
                 "Create instance"
             </button>

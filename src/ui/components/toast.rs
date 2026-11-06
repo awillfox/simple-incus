@@ -92,7 +92,7 @@ pub fn toast_busy(msg: impl Into<String>) -> Option<u64> {
 /// Changes the text of a toast in place (live progress).
 pub fn toast_set_text(id: u64, msg: impl Into<String>) {
     let Some(t) = store() else { return };
-    if let Some(item) = t.list.try_with(|l| l.iter().find(|i| i.id == id).cloned()).flatten() {
+    if let Some(item) = t.list.try_with_untracked(|l| l.iter().find(|i| i.id == id).cloned()).flatten() {
         item.msg.try_set(msg.into());
     }
 }
@@ -101,7 +101,14 @@ pub fn toast_set_text(id: u64, msg: impl Into<String>) {
 /// others dismiss after a few seconds.
 pub fn toast_finish(id: u64, kind: ToastKind, msg: impl Into<String>) {
     let Some(t) = store() else { return };
-    let msg = RwSignal::new(msg.into());
+    let msg = msg.into();
+    let live = t.list.try_with_untracked(|l| l.iter().any(|i| i.id == id)).unwrap_or(false);
+    if !live {
+        // The user closed the busy toast; the result must still be seen.
+        toast(kind, msg);
+        return;
+    }
+    let msg = RwSignal::new(msg);
     t.list.try_update(|l| {
         if let Some(item) = l.iter_mut().find(|i| i.id == id) {
             *item = ToastItem { id, kind, busy: false, msg };
@@ -160,4 +167,42 @@ pub fn ToastHost() -> impl IntoView {
         </div>
     }
     .into_any()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn with_toasts(f: impl FnOnce(Toasts)) {
+        let owner = Owner::new();
+        owner.set();
+        provide_toasts();
+        f(store().unwrap());
+    }
+
+    #[test]
+    fn finishing_a_dismissed_toast_still_shows_the_result() {
+        with_toasts(|t| {
+            let id = toast_busy("Creating web1...").unwrap();
+            toast_dismiss(id);
+            toast_finish(id, ToastKind::Error, "Creating web1 failed: boom");
+            let list = t.list.get_untracked();
+            assert_eq!(list.len(), 1);
+            assert_eq!(list[0].kind, ToastKind::Error);
+            assert!(!list[0].busy);
+            assert_eq!(list[0].msg.get_untracked(), "Creating web1 failed: boom");
+        });
+    }
+
+    #[test]
+    fn finishing_a_live_toast_replaces_it() {
+        with_toasts(|t| {
+            let id = toast_busy("Creating web1...").unwrap();
+            toast_finish(id, ToastKind::Error, "failed");
+            let list = t.list.get_untracked();
+            assert_eq!(list.len(), 1);
+            assert_eq!(list[0].id, id);
+            assert!(!list[0].busy);
+        });
+    }
 }
