@@ -86,6 +86,7 @@ pub fn map_event(v: &Value) -> Option<UiEvent> {
             instance: meta["source"].as_str().and_then(instance_from_path),
             op_id: None,
             progress: None,
+            status: None,
             message: meta["action"].as_str().unwrap_or_default().to_string(),
         }),
         "operation" => {
@@ -106,6 +107,7 @@ pub fn map_event(v: &Value) -> Option<UiEvent> {
                     .and_then(|a| a.iter().find_map(|p| p.as_str().and_then(instance_from_path))),
                 op_id: meta["id"].as_str().map(str::to_string),
                 progress,
+                status: meta["status"].as_str().map(str::to_string),
                 message,
             })
         }

@@ -3,6 +3,8 @@ use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
 
 mod actions;
+mod create;
+mod create_image;
 mod instance_detail;
 mod instance_metrics;
 mod images_catalog;
@@ -11,6 +13,7 @@ mod instances;
 mod live;
 mod overview;
 
+pub use create::CreateDrawer;
 pub use instance_detail::InstancePage;
 pub use instances::InstancesPage;
 pub use overview::OverviewPage;

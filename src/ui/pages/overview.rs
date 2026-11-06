@@ -438,6 +438,7 @@ mod tests {
             instance: Some("web1".into()),
             op_id: None,
             progress: None,
+            status: None,
             message: "instance-shutdown".into(),
         };
         assert_eq!(activity_text(&ev), "Shutdown");
@@ -461,6 +462,7 @@ mod tests {
                         instance: Some("web1".into()),
                         op_id: Some("a".into()),
                         progress: Some("60%".into()),
+                        status: None,
                         message: "Starting instance".into(),
                     },
                 },
@@ -471,6 +473,7 @@ mod tests {
                         instance: None,
                         op_id: None,
                         progress: None,
+                        status: None,
                         message: "image-created".into(),
                     },
                 },

@@ -141,6 +141,7 @@ mod tests {
             instance: Some("web1".into()),
             op_id: op.map(str::to_string),
             progress: progress.map(str::to_string),
+            status: None,
             message: "m".into(),
         }
     }

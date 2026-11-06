@@ -8,7 +8,7 @@ use leptos_router::{
 use crate::ui::components::{
     provide_create_drawer, provide_nav_state, provide_toasts, IncusBanner, Sidebar, ToastHost, Topbar,
 };
-use crate::ui::pages::{ImagesPage, InstancePage, InstancesPage, NotFoundPage, OverviewPage};
+use crate::ui::pages::{CreateDrawer, ImagesPage, InstancePage, InstancesPage, NotFoundPage, OverviewPage};
 use crate::ui::theme::BOOTSTRAP_SCRIPT;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
@@ -41,7 +41,7 @@ pub fn App() -> impl IntoView {
     crate::ui::events::provide_event_stream();
     provide_toasts();
     provide_nav_state();
-    // Opened by later pages (e.g. "Create from image"); content comes later.
+    // Opened by Instances ("Create instance") and Images ("Launch").
     provide_create_drawer();
 
     view! {
@@ -67,6 +67,7 @@ pub fn App() -> impl IntoView {
                     </div>
                 </div>
             </div>
+            <CreateDrawer/>
             <ToastHost/>
         </Router>
     }

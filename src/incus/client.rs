@@ -221,6 +221,25 @@ impl IncusClient {
         expect_async(self.send::<(), serde_json::Value>(Method::DELETE, &path, None).await?)
     }
 
+    pub async fn list_profiles(&self) -> Result<Vec<raw::Profile>, IncusError> {
+        self.get("/1.0/profiles?recursion=1").await
+    }
+
+    pub async fn get_profile(&self, name: &str) -> Result<raw::Profile, IncusError> {
+        self.get(&format!("/1.0/profiles/{}", encode_segment(name))).await
+    }
+
+    pub async fn list_networks(&self) -> Result<Vec<raw::Network>, IncusError> {
+        self.get("/1.0/networks?recursion=1").await
+    }
+
+    /// Starts creating an instance from a full request body and returns the
+    /// background operation as soon as Incus accepts it (image download and
+    /// unpacking continue in Incus; nothing waits on them here).
+    pub async fn create_instance(&self, body: &serde_json::Value) -> Result<Operation, IncusError> {
+        expect_async(self.send::<_, serde_json::Value>(Method::POST, "/1.0/instances", Some(body)).await?)
+    }
+
     pub async fn resources(&self) -> Result<raw::Resources, IncusError> {
         self.get("/1.0/resources").await
     }

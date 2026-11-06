@@ -44,7 +44,15 @@ pub fn use_create_drawer() -> CreateDrawerState {
 
 /// Slide-over panel from the right. Escape, the close button or the backdrop closes it.
 #[component]
-pub fn Drawer(open: RwSignal<bool>, #[prop(into)] title: String, children: ChildrenFn) -> impl IntoView {
+pub fn Drawer(
+    open: RwSignal<bool>,
+    #[prop(into)] title: String,
+    /// Width classes at `sm` and up; the default is 520 px.
+    #[prop(optional, into)]
+    width: Option<String>,
+    children: ChildrenFn,
+) -> impl IntoView {
+    let width = width.unwrap_or_else(|| "sm:w-[520px]".to_string());
     let close_ref = NodeRef::<html::Button>::new();
     Effect::new(move |_| {
         if open.get() {
@@ -68,7 +76,7 @@ pub fn Drawer(open: RwSignal<bool>, #[prop(into)] title: String, children: Child
                     role="dialog"
                     aria-modal="true"
                     aria-label=title.clone()
-                    class="anim-slide-in absolute inset-y-0 right-0 flex w-full flex-col border-l border-border bg-surface shadow-pop sm:w-[520px]"
+                    class=format!("anim-slide-in absolute inset-y-0 right-0 flex w-full flex-col border-l border-border bg-surface shadow-pop {width}")
                 >
                     <header class="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border px-5">
                         <h2 class="truncate text-[15px] font-semibold text-text">{title.clone()}</h2>

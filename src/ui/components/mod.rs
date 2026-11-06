@@ -22,5 +22,7 @@ pub use page::{EmptyState, PageHeader, Skeleton};
 pub use sidebar::{provide_nav_state, NavState, Sidebar};
 pub use status_pill::StatusPill;
 pub use tabs::Tabs;
-pub use toast::{provide_toasts, toast, ToastHost, ToastKind};
+pub use toast::{
+    provide_toasts, toast, toast_busy, toast_dismiss, toast_finish, toast_set_text, ToastHost, ToastKind,
+};
 pub use topbar::Topbar;

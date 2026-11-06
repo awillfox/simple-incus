@@ -122,6 +122,15 @@ pub struct CreateRequest {
     pub start: bool,
 }
 
+/// Choices offered by the create form.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CreateOptions {
+    pub profiles: Vec<String>,
+    /// Managed networks only.
+    pub networks: Vec<String>,
+    pub pools: Vec<String>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UiEventKind {
     Lifecycle,
@@ -134,6 +143,10 @@ pub struct UiEvent {
     pub instance: Option<String>,
     pub op_id: Option<String>,
     pub progress: Option<String>,
+    /// Operation status as Incus reports it (`Running`, `Success`, `Failure`,
+    /// ...); `None` for lifecycle events.
+    #[serde(default)]
+    pub status: Option<String>,
     pub message: String,
 }
 
@@ -164,5 +177,24 @@ pub enum WsMsg {
 impl WsMsg {
     pub fn status(connected: bool) -> WsMsg {
         WsMsg::Status { kind: StatusKind::Status, connected }
+    }
+}
+
+/// Incus instance-name rules, shared by the browser (inline feedback) and the
+/// server (authoritative): 1-63 characters, letters, digits and hyphens,
+/// starting with a letter, not ending with a hyphen. Names made only of digits
+/// are impossible by the first rule.
+pub fn validate_name(name: &str) -> Result<(), String> {
+    const RULES: &str =
+        "Use 1 to 63 letters, digits or hyphens; start with a letter and do not end with a hyphen";
+    let ok = (1..=63).contains(&name.len())
+        && name.starts_with(|c: char| c.is_ascii_alphabetic())
+        && !name.ends_with('-')
+        && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+        && !name.chars().all(|c| c.is_ascii_digit());
+    if ok {
+        Ok(())
+    } else {
+        Err(RULES.to_string())
     }
 }

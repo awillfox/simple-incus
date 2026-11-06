@@ -200,6 +200,24 @@ pub struct StoragePool {
     pub driver: String,
 }
 
+/// Entry of `/1.0/profiles?recursion=1`.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct Profile {
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub devices: std::collections::HashMap<String, std::collections::HashMap<String, String>>,
+}
+
+/// Entry of `/1.0/networks?recursion=1`.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct Network {
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub managed: bool,
+}
+
 /// `/1.0/storage-pools/{name}/resources`.
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct PoolResources {

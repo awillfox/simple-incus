@@ -18,19 +18,10 @@ mod imp {
         IncusError::Api { status: 400, message: message.into() }
     }
 
-    /// Incus instance-name rules: letters, digits and hyphens, 1-63 characters,
-    /// starting with a letter.
+    /// Snapshots follow the instance-name rules ([`crate::model::validate_name`]).
     pub fn validate_snapshot_name(name: &str) -> Result<(), IncusError> {
-        let ok = (1..=63).contains(&name.len())
-            && name.starts_with(|c: char| c.is_ascii_alphabetic())
-            && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '-');
-        if ok {
-            Ok(())
-        } else {
-            Err(bad_request(
-                "Snapshot name must be 1 to 63 characters: letters, digits and hyphens, starting with a letter",
-            ))
-        }
+        crate::model::validate_name(name)
+            .map_err(|rules| bad_request(format!("Snapshot name is invalid: {rules}")))
     }
 
     /// `snap-YYYYMMDD-HHMMSS` for a Unix time (UTC).

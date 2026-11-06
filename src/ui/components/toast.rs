@@ -7,7 +7,7 @@ use leptos::prelude::*;
 
 use super::icons::{Icon, IconName};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ToastKind {
     Success,
     Error,
@@ -20,7 +20,9 @@ pub const AUTO_DISMISS_MS: u64 = 5000;
 struct ToastItem {
     id: u64,
     kind: ToastKind,
-    msg: String,
+    /// Shows a spinner instead of the kind's icon (work in progress).
+    busy: bool,
+    msg: RwSignal<String>,
 }
 
 #[derive(Clone, Copy)]
@@ -31,7 +33,15 @@ struct Toasts {
 
 impl Toasts {
     fn dismiss(self, id: u64) {
-        self.list.update(|l| l.retain(|t| t.id != id));
+        // Timers can fire after the app is gone.
+        self.list.try_update(|l| l.retain(|t| t.id != id));
+    }
+
+    fn schedule_dismiss(self, id: u64) {
+        #[cfg(feature = "hydrate")]
+        set_timeout(move || self.dismiss(id), std::time::Duration::from_millis(AUTO_DISMISS_MS));
+        #[cfg(not(feature = "hydrate"))]
+        let _ = id;
     }
 }
 
@@ -57,15 +67,54 @@ fn store() -> Option<Toasts> {
     t
 }
 
-/// Shows a toast. No-op if `provide_toasts()` was never called.
-pub fn toast(kind: ToastKind, msg: impl Into<String>) {
-    let Some(t) = store() else { return };
+fn push(kind: ToastKind, busy: bool, msg: String) -> Option<u64> {
+    let t = store()?;
     let id = t.next.get_value();
     t.next.set_value(id + 1);
-    t.list.update(|l| l.push(ToastItem { id, kind, msg: msg.into() }));
+    t.list.update(|l| l.push(ToastItem { id, kind, busy, msg: RwSignal::new(msg) }));
+    Some(id)
+}
+
+/// Shows a toast. No-op if `provide_toasts()` was never called.
+pub fn toast(kind: ToastKind, msg: impl Into<String>) {
+    if let (Some(t), Some(id)) = (store(), push(kind, false, msg.into())) {
+        if kind != ToastKind::Error {
+            t.schedule_dismiss(id);
+        }
+    }
+}
+
+/// Shows a spinner toast that stays until [`toast_finish`] or [`toast_dismiss`].
+pub fn toast_busy(msg: impl Into<String>) -> Option<u64> {
+    push(ToastKind::Info, true, msg.into())
+}
+
+/// Changes the text of a toast in place (live progress).
+pub fn toast_set_text(id: u64, msg: impl Into<String>) {
+    let Some(t) = store() else { return };
+    if let Some(item) = t.list.try_with(|l| l.iter().find(|i| i.id == id).cloned()).flatten() {
+        item.msg.try_set(msg.into());
+    }
+}
+
+/// Turns a toast into a finished one of `kind`. Errors stay until closed,
+/// others dismiss after a few seconds.
+pub fn toast_finish(id: u64, kind: ToastKind, msg: impl Into<String>) {
+    let Some(t) = store() else { return };
+    let msg = RwSignal::new(msg.into());
+    t.list.try_update(|l| {
+        if let Some(item) = l.iter_mut().find(|i| i.id == id) {
+            *item = ToastItem { id, kind, busy: false, msg };
+        }
+    });
     if kind != ToastKind::Error {
-        #[cfg(feature = "hydrate")]
-        set_timeout(move || t.dismiss(id), std::time::Duration::from_millis(AUTO_DISMISS_MS));
+        t.schedule_dismiss(id);
+    }
+}
+
+pub fn toast_dismiss(id: u64) {
+    if let Some(t) = store() {
+        t.dismiss(id);
     }
 }
 
@@ -78,9 +127,10 @@ pub fn ToastHost() -> impl IntoView {
             class="pointer-events-none fixed bottom-4 right-4 z-[60] flex w-[360px] max-w-[calc(100vw-32px)] flex-col gap-2"
             aria-live="polite"
         >
-            <For each=move || t.list.get() key=|item| item.id let:item>
+            <For each=move || t.list.get() key=|item| (item.id, item.kind, item.busy) let:item>
                 {
                     let (icon, tone) = match item.kind {
+                        _ if item.busy => (IconName::Spinner, "text-info"),
                         ToastKind::Success => (IconName::CheckCircle, "text-ok"),
                         ToastKind::Error => (IconName::AlertCircle, "text-danger"),
                         ToastKind::Info => (IconName::Info, "text-info"),
@@ -94,7 +144,7 @@ pub fn ToastHost() -> impl IntoView {
                             <span class=format!("mt-px {tone}")>
                                 <Icon name=icon/>
                             </span>
-                            <p class="min-w-0 flex-1 break-words text-[13px] leading-snug text-text">{item.msg}</p>
+                            <p class="min-w-0 flex-1 break-words text-[13px] leading-snug text-text">{move || item.msg.get()}</p>
                             <button
                                 type="button"
                                 class="-my-1 flex size-6 shrink-0 items-center justify-center rounded text-muted hover:bg-hover hover:text-text"

@@ -25,6 +25,7 @@ fn maps_lifecycle_event() {
             instance: Some("c1".into()),
             op_id: None,
             progress: None,
+            status: None,
             message: "instance-started".into()
         }
     );
